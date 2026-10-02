@@ -117,20 +117,94 @@ Opened from *Add a subscription* by choosing **Add custom**, for services that a
 
 ### Domain concepts and example data
 
-**[TODO: Hoi]** Link to the sample JSON files (fictional data), for example for user and subscription. Explain the important fields and mark what is still unclear (for example: CHF and USD).
+The main domain concepts are a **user** and the user's **subscriptions**. A user owns
+subscriptions, and each subscription records the service, category, price, currency,
+billing frequency, next renewal date and payment status shown on the dashboard. The
+following examples use fictional user data and realistic Swiss prices as of the design
+draft; they are not connected to real accounts.
+
+The IDs are intentionally short because these are documentation examples. In the
+implemented system, they must still be unique for their entity type.
+
+#### User
+
+```json
+{
+  "id": "00001",
+  "name": "Lena Müller",
+  "email": "lena.mueller@example.com",
+  "currency": "CHF",
+  "created_at": "2025-09-01T08:30:00Z"
+}
+```
+
+#### Subscriptions
+
+```json
+[
+  {
+    "id": "00001",
+    "user_id": "00001",
+    "service": "Netflix",
+    "category": "Entertainment",
+    "price": 18.90,
+    "currency": "CHF",
+    "billing_period": "monthly",
+    "start_date": "2025-09-12",
+    "next_charge_date": "2026-10-12",
+    "payment_status": "paid",
+    "notification_enabled": true
+  },
+  {
+    "id": "00002",
+    "user_id": "00001",
+    "service": "SBB Halbtax",
+    "category": "Transport",
+    "price": 190.00,
+    "currency": "CHF",
+    "billing_period": "yearly",
+    "start_date": "2026-02-01",
+    "next_charge_date": "2027-02-01",
+    "payment_status": "pending",
+    "notification_enabled": true
+  },
+  {
+    "id": "00003",
+    "user_id": "00001",
+    "service": "Spotify",
+    "category": "Entertainment",
+    "price": 14.95,
+    "currency": "CHF",
+    "billing_period": "monthly",
+    "start_date": "2025-10-03",
+    "next_charge_date": "2026-10-03",
+    "payment_status": "paid",
+    "notification_enabled": false
+  }
+]
+```
+
+`price` is the amount charged for the selected `billing_period`; the API or app can
+normalise yearly and weekly prices to calculate the monthly dashboard total. `CHF` is
+the user's default currency and is used for these Swiss examples. Currency conversion
+for subscriptions billed in another currency (for example, USD) is still an open
+question, as is whether `payment_status` is entered manually or supplied by a future
+payment integration.
 
 ### Business rules and possible operations
 
 Rule: the price of a subscription must be positive. Exception to discuss: what happens if the user adds the same service twice.
 
-**[TODO: Hoi, check this draft]**
+The HTTP method and endpoint are included in the **Proposed action** column so the
+lecturer's five-column template remains unchanged. The request examples use the
+subscription fields defined above; authentication details are not included yet.
 
 | User goal | Proposed action | Example input | Expected output | Open question |
 |---|---|---|---|---|
-| See all subscriptions | Read a list | – | List of subscriptions and total | Do we calculate the total in the app or the API? |
-| Add a subscription | Create | Service, price, currency, billing period | New subscription with an id | Which currencies? |
-| Change a subscription | Change | Subscription id and new values | Updated subscription | Edit screen option 1 or 2? |
-| Remove a subscription | Remove | Subscription id | Confirmation | Do we ask the user to confirm? |
+| See all subscriptions | `GET /subscriptions` — Read a list | Optional query parameters, for example `?status=active` | `200 OK` + list of subscriptions and monthly total | Do we calculate the total in the app or the API? |
+| Add a subscription | `POST /subscriptions` — Create | `{ "service": "Netflix", "category": "Entertainment", "price": 18.90, "currency": "CHF", "billing_period": "monthly", "start_date": "2025-09-12", "notification_enabled": true }` | `201 Created` + new subscription object with its `id` | Which currencies and billing periods should be supported? |
+| Change a subscription | `PATCH /subscriptions/{id}` — Change selected fields | Path `id` plus `{ "price": 19.90, "notification_enabled": false }` | `200 OK` + updated subscription object | Should the edit screen support partial updates or require all fields? |
+| Remove a subscription | `DELETE /subscriptions/{id}` — Remove | Path `id`, for example `/subscriptions/00001` | `204 No Content` | Do we ask the user to confirm before deleting? |
 
 ### Inspiration from existing apps or APIs (optional)
 
