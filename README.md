@@ -51,11 +51,53 @@ Question to discuss: what happens if the user enters a price that is zero or neg
 
 ## 2. Design
 
-### Screens and navigation
+## Screens and navigation
 
-**[TODO: Polina]** Figma link: https://www.figma.com/design/FitGxKHAvpqMSCX6qlc3aL/Web-Based-Apps
+Figma: https://www.figma.com/design/FitGxKHAvpqMSCX6qlc3aL/Web-Based-Apps
 
-Main screens: Dashboard, Add a subscription, Edit my subscriptions (two options in Figma, not decided yet). Short explanation of inputs, actions and feedback goes here.
+The file contains low-fidelity wireframes (Dashboard, Add a subscription, Edit option 1, Edit option 2)
+and high-fidelity versions of the Dashboard, Add a subscription and Edit (based on option 2).
+
+### Navigation
+
+Dashboard is the start screen. From there the user can:
+- **Add subscription** → opens *Add a subscription* → after linking, returns to the Dashboard with the new entry in the list
+- **Edit subscriptions** → opens *Edit my subscriptions* → *Save* or *Cancel* returns to the Dashboard
+
+In the high-fi version a sidebar (Dashboard, Subscriptions, Add subscription, Billing history, Settings)
+gives direct access to the same screens. Billing history and Settings are not designed yet.
+
+### 1. Dashboard (Current subscriptions)
+
+- **Shows:** list of all subscriptions with service name and logo, category, current billing period,
+  price with currency and payment status (`paid` / `pending`). Above the list: total amount;
+  the high-fi version adds summary cards for monthly total, total recurring commitments and next charge.
+- **Inputs:** search field (high-fi), sort dropdown (e.g. by renewal date), row menu (⋯) per subscription.
+- **Actions:** *Add subscription*, *Edit subscriptions*, *Review billing*.
+- **Feedback:** status badges (yellow = pending, green = paid), count of active subscriptions,
+  a notice banner when renewals are still pending (e.g. "2 renewals need attention").
+
+### 2. Add a subscription
+
+- **Inputs:** search field to filter services; scrollable list of popular services
+  (Netflix, Spotify, SBB Halbtax, U-Abo) plus *Add custom* for services not in the list.
+- **Actions:** select a service, *Link an App* to add it, *Cancel* to go back without changes.
+- **Feedback:** the selected row is highlighted and a "<Service> selected" label appears above the list;
+  *Link an App* is the primary (green) button.
+
+### 3. Edit my subscriptions (two options, not decided yet)
+
+**Option 1 – edit all in one table.** Every subscription is a row with an inline Month/Year toggle,
+an editable price field and a *Delete* button. *Save* applies all changes at once, *Cancel* discards them.
+Fast for quick changes across several subscriptions, but limited to frequency and price.
+
+**Option 2 – edit one subscription in a form** (also the basis of the high-fi design).
+- **Inputs:** service dropdown, billing frequency (Yearly / Monthly / Weekly), price and currency,
+  start date (date picker), checkbox "Activate notification" (reminder before renewal).
+- **Actions:** *Change the name*, *Renew the billing period*, *Delete*, *Cancel*, *Save*.
+- **Feedback:** status badge (e.g. ACTIVE), total per year shown in the header,
+  "All fields required" note and helper text under the fields; *Delete* is styled red as a destructive action.
+  More fields than option 1, but only one subscription at a time.
 
 ### Domain concepts and example data
 
