@@ -63,6 +63,7 @@ and high-fidelity versions of the Dashboard, Add a subscription and Edit (based 
 Dashboard is the start screen. From there the user can:
 - **Add subscription** → opens *Add a subscription* → after linking, returns to the Dashboard with the new entry in the list
 - **Edit subscriptions** → opens *Edit my subscriptions* → *Save* or *Cancel* returns to the Dashboard
+- **Add subscription → Add custom** → opens *Add a custom subscription* → *Add subscription* returns to the Dashboard
 
 In the high-fi version a sidebar (Dashboard, Subscriptions, Add subscription, Billing history, Settings)
 gives direct access to the same screens. Billing history and Settings are not designed yet.
@@ -98,6 +99,21 @@ Fast for quick changes across several subscriptions, but limited to frequency an
 - **Feedback:** status badge (e.g. ACTIVE), total per year shown in the header,
   "All fields required" note and helper text under the fields; *Delete* is styled red as a destructive action.
   More fields than option 1, but only one subscription at a time.
+
+### 4. Add a custom subscription
+
+Opened from *Add a subscription* by choosing **Add custom**, for services that are not in the list
+(e.g. a gym membership).
+
+- **Inputs:** custom subscription name (free text with edit icon), billing frequency
+  (Yearly / Monthly / Weekly), price and currency, start date (date picker),
+  checkbox "Activate notification" (reminder before renewal).
+- **Actions:** *Add subscription* saves the entry and returns to the Dashboard,
+  *Cancel* goes back without saving.
+- **Feedback:** NEW and CUSTOM badges show that this is a user-created entry,
+  "Required" / "All fields required" notes and helper text under the fields,
+  hint in the name field ("Enter a name you'll recognize"). *Add subscription* is the primary (green) button.
+  The layout matches the Edit form (option 2), so users recognise the same fields.
 
 ### Domain concepts and example data
 
