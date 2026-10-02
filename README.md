@@ -235,4 +235,4 @@ We looked at normal subscription tracker apps. We like the simple dashboard with
 
 - Figma design: link above.
 - Template: FHNW Web-based Applications, Milestone 1 README.
-- AI assistance: we used an AI assistant to help structure and phrase this README. **[TODO: confirm with the group]**
+- AI assistance: we used an AI assistant to help structure and phrase this README.
