@@ -26,15 +26,19 @@ We review each other's work so everyone understands the draft.
   - Subscription owner: wants to know how much they spend per month.
   - Budget saver: wants to avoid payments for subscriptions they don't use.
 - Proposed benefit: One clear overview of all subscriptions and the monthly total.
-- Initial scope: First workflow is adding a subscription and seeing it in the dashboard. Editing and deleting come right after. The dashboard shows the monthly total, the next charge, and each subscription with its category, billing period, price and payment status. Budgets, spending tracking, reminders and charts can wait. No bank connection.
+- Initial scope: First workflow is adding a subscription and seeing it in the dashboard. Editing and deleting come right after. The dashboard shows the monthly total, the next charge, and each subscription with its category, billing period, price and payment status. Budgets, spending tracking and charts can wait. No bank connection.
 
 ### User stories and first workflow
 
-- As a user, I want to log in, so that only I can see my subscriptions.
-- As a user, I want to see all my subscriptions and the monthly total, so that I know what I spend.
-- As a user, I want to add a subscription, so that my overview stays complete.
-- As a user, I want to edit or delete a subscription, so that my data stays correct.
-- As a user, I want to use the app on laptop and phone, so that I can check it anywhere.
+- As an admin, I want to log in, so that only I can access the subscriptions.
+- As an admin, I want to see all subscriptions and the monthly total, so that I know what is spent.
+- As an admin, I want to add a subscription, so that the overview stays complete.
+- As an admin, I want to edit or delete a subscription, so that the data stays correct.
+- As an admin, I want to see the payment status (paid/pending) of each subscription, so that I know which renewals need attention.
+- As an admin, I want to see the next charge date, so that I am not surprised by upcoming payments.
+- As an admin, I want to search and sort the subscriptions (e.g. by renewal date), so that I can find a subscription quickly.
+- As an admin, I want to add a custom subscription, so that services not in the list (e.g. a gym membership) are also tracked.
+- As an admin, I want to activate a notification for a subscription, so that I get a reminder before it renews.
 
 Outside the initial scope: bank connection, automatic cancellation, budgets.
 
