@@ -123,7 +123,9 @@ Opened from *Add a subscription* by choosing **Add custom**, for services that a
 
 The main domain concepts are a **user** and the user's **subscriptions**. A user owns
 subscriptions, and each subscription records the service, category, price, currency,
-billing frequency, next renewal date and payment status shown on the dashboard. The
+billing frequency, next renewal date, payment status and notification preference shown
+on the dashboard. A custom subscription uses the same structure as a listed service and
+sets `is_custom` to `true`. The
 following examples use fictional user data and realistic Swiss prices as of the design
 draft; they are not connected to real accounts.
 
@@ -150,6 +152,7 @@ implemented system, they must still be unique for their entity type.
     "id": "00001",
     "user_id": "00001",
     "service": "Netflix",
+    "is_custom": false,
     "category": "Entertainment",
     "price": 18.90,
     "currency": "CHF",
@@ -163,6 +166,7 @@ implemented system, they must still be unique for their entity type.
     "id": "00002",
     "user_id": "00001",
     "service": "SBB Halbtax",
+    "is_custom": false,
     "category": "Transport",
     "price": 190.00,
     "currency": "CHF",
@@ -176,6 +180,7 @@ implemented system, they must still be unique for their entity type.
     "id": "00003",
     "user_id": "00001",
     "service": "Spotify",
+    "is_custom": false,
     "category": "Entertainment",
     "price": 14.95,
     "currency": "CHF",
@@ -197,18 +202,30 @@ payment integration.
 
 ### Business rules and possible operations
 
-Rule: the price of a subscription must be positive. Exception to discuss: what happens if the user adds the same service twice.
+Rules: prices must be positive, `billing_period` must be `weekly`, `monthly` or
+`yearly`, dates must use `YYYY-MM-DD`, and `payment_status` must be `paid` or
+`pending`. A custom subscription uses `POST /subscriptions` with `is_custom: true`.
+The API returns only the authenticated user's subscriptions. Search and sorting are
+handled by query parameters, and notification activation is updated through the same
+partial-update operation as other editable fields.
 
-The HTTP method and endpoint are included in the **Proposed action** column so the
-lecturer's five-column template remains unchanged. The request examples use the
-subscription fields defined above; authentication details are not included yet.
+The request examples use the subscription fields defined above. Authentication is
+represented by a bearer token after login; password storage and payment integration are
+outside this milestone.
 
-| User goal | Proposed action | Example input | Expected output | Open question |
-|---|---|---|---|---|
-| See all subscriptions | `GET /subscriptions` — Read a list | Optional query parameters, for example `?status=active` | `200 OK` + list of subscriptions and monthly total | Do we calculate the total in the app or the API? |
-| Add a subscription | `POST /subscriptions` — Create | `{ "service": "Netflix", "category": "Entertainment", "price": 18.90, "currency": "CHF", "billing_period": "monthly", "start_date": "2025-09-12", "notification_enabled": true }` | `201 Created` + new subscription object with its `id` | Which currencies and billing periods should be supported? |
-| Change a subscription | `PATCH /subscriptions/{id}` — Change selected fields | Path `id` plus `{ "price": 19.90, "notification_enabled": false }` | `200 OK` + updated subscription object | Should the edit screen support partial updates or require all fields? |
-| Remove a subscription | `DELETE /subscriptions/{id}` — Remove | Path `id`, for example `/subscriptions/00001` | `204 No Content` | Do we ask the user to confirm before deleting? |
+| User goal | Method | Path | Example JSON / parameters | Success status and response | Meaningful failure | Open question |
+|---|---|---|---|---|---|---|
+| Log in | `POST` | `/login` | `{ "email": "lena.mueller@example.com", "password": "example-password" }` | `200 OK` — `{ "access_token": "<token>", "user": { "id": "00001", "email": "lena.mueller@example.com" } }` | `401 Unauthorized` — `{ "error": "invalid_credentials" }` | How long should the bearer token remain valid, and do we need logout or refresh-token operations? |
+| See, search and sort subscriptions | `GET` | `/subscriptions?search=netflix&sort=next_charge_date&order=asc` | No request body. Supported parameters: `search`, `sort` (`next_charge_date`, `price`, `service`) and `order` (`asc`, `desc`). | `200 OK` — `{ "subscriptions": [ ... ], "monthly_total": 33.85, "currency": "CHF" }` | `400 Bad Request` — `{ "error": "invalid_sort_field" }` | Should search be case-insensitive, and do we need pagination when the list grows? |
+| Add a listed subscription | `POST` | `/subscriptions` | `{ "service": "Netflix", "is_custom": false, "category": "Entertainment", "price": 18.90, "currency": "CHF", "billing_period": "monthly", "start_date": "2025-09-12", "notification_enabled": true }` | `201 Created` — new subscription object with its `id`, `next_charge_date` and `payment_status` | `422 Unprocessable Entity` — `{ "error": "price_must_be_positive", "field": "price" }` | Which currencies and predefined services/categories should be supported in the first implementation? |
+| Add a custom subscription | `POST` | `/subscriptions` | `{ "service": "Local Gym", "is_custom": true, "category": "Health", "price": 45.00, "currency": "CHF", "billing_period": "monthly", "start_date": "2025-09-12", "notification_enabled": false }` | `201 Created` — new subscription object with `is_custom: true` | `422 Unprocessable Entity` — `{ "error": "service_name_required", "field": "service" }` | Should custom categories be free text, selected from the same category list, or optional? |
+| Change a subscription or activate its notification | `PATCH` | `/subscriptions/{id}` | `{ "price": 19.90, "notification_enabled": true }` | `200 OK` — updated subscription object | `404 Not Found` — `{ "error": "subscription_not_found" }` | How many days before `next_charge_date` should a notification be sent, and should users choose that timing? |
+| Remove a subscription | `DELETE` | `/subscriptions/{id}` | No request body. Example path: `/subscriptions/00001` | `204 No Content` | `404 Not Found` — `{ "error": "subscription_not_found" }` | Is deletion permanent, or should the API keep an inactive/history record for billing history? |
+
+For the list operation, `monthly_total` is calculated by the API from each subscription's
+`price` and `billing_period`. Currency conversion remains an open question for
+subscriptions billed in another currency. Duplicate services are allowed because a user
+may have more than one plan, but the UI should warn before creating an apparent duplicate.
 
 ### Inspiration from existing apps or APIs (optional)
 
