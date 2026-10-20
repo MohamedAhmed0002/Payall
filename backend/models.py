@@ -33,13 +33,12 @@ class Subscription(SQLModel, table=True):
     currency: str
     billing_period: str
     start_date: date
-    next_charge_date: date
     payment_status: str
     notification_enabled: bool
 
 
 class SubscriptionInput(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     service: str
     is_custom: bool = False
@@ -56,6 +55,12 @@ class SubscriptionOutput(SubscriptionInput):
     user_id: int
     next_charge_date: date
     payment_status: Literal["paid", "pending"]
+
+
+class Error(BaseModel):
+    error: str
+    field: str
+    message: str | None = None
 
 
 class SubscriptionList(BaseModel):

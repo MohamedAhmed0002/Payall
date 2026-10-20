@@ -1,13 +1,16 @@
 from datetime import date
+import json
 import sys
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from sqlmodel import Session
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from main import create_app
-from service import next_charge_date
+from database import initialise, make_engine
+from service import list_subscriptions, next_charge_date
 
 
 def client_for(tmp_path):
@@ -34,6 +37,16 @@ def test_get_seeded_subscriptions(tmp_path):
     assert response.status_code == 200
     assert len(response.json()["subscriptions"]) == 3
     assert response.json()["monthly_total"] == 49.68
+
+
+def test_list_calculates_next_charge_dates(tmp_path):
+    engine = make_engine(tmp_path / "payall.sqlite")
+    initialise(engine)
+    with Session(engine) as session:
+        result = list_subscriptions(session, date(2026, 10, 20))
+    next_dates = {subscription.service: subscription.next_charge_date for subscription in result.subscriptions}
+    assert next_dates["Netflix"] == date(2026, 11, 12)
+    assert next_dates["Spotify"] == date(2026, 11, 3)
 
 
 def test_create_subscription_and_updated_total(tmp_path):
@@ -87,6 +100,16 @@ def test_rejects_unknown_fields(tmp_path):
         response = client.post("/subscriptions", json=valid_payload(extra="no"))
     assert response.status_code == 422
     assert response.json()["error"] == "invalid_input"
+
+
+def test_rejects_infinite_prices(tmp_path):
+    with client_for(tmp_path) as client:
+        payload = json.dumps(valid_payload(price=float("inf")))
+        response = client.post(
+            "/subscriptions", content=payload, headers={"content-type": "application/json"}
+        )
+    assert response.status_code == 422
+    assert response.json()["field"] == "price"
 
 
 def test_data_survives_restart(tmp_path):

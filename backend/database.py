@@ -40,6 +40,5 @@ def initialise(engine):
         subscriptions = []
         for row in seed["subscriptions"]:
             row["start_date"] = date.fromisoformat(row["start_date"])
-            row["next_charge_date"] = date.fromisoformat(row["next_charge_date"])
             subscriptions.append(Subscription(**row))
         session.add_all(subscriptions)

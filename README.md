@@ -146,6 +146,8 @@ and `3`, matching the implemented system and the bar example.
 
 #### Subscriptions
 
+`next_charge_date` is calculated by the API from `start_date` and `billing_period`.
+
 ```json
 [
   {
@@ -158,7 +160,7 @@ and `3`, matching the implemented system and the bar example.
     "currency": "CHF",
     "billing_period": "monthly",
     "start_date": "2025-09-12",
-    "next_charge_date": "2025-10-12",
+    "next_charge_date": "2026-11-12",
     "payment_status": "paid",
     "notification_enabled": true
   },
@@ -186,7 +188,7 @@ and `3`, matching the implemented system and the bar example.
     "currency": "CHF",
     "billing_period": "monthly",
     "start_date": "2025-10-03",
-    "next_charge_date": "2025-10-03",
+    "next_charge_date": "2026-11-03",
     "payment_status": "paid",
     "notification_enabled": false
   }
@@ -253,7 +255,10 @@ In code, we use the ORM **SQLModel** (built on SQLAlchemy), following the
 | Table | Main columns | Relationship |
 |---|---|---|
 | `user` | `id`, `name`, `email`, `currency`, `created_at` | One user has many subscriptions |
-| `subscription` | `id`, `user_id`, `service`, `is_custom`, `category`, `price`, `currency`, `billing_period`, `start_date`, `next_charge_date`, `payment_status`, `notification_enabled` | `user_id` → `user.id` (foreign key) |
+| `subscription` | `id`, `user_id`, `service`, `is_custom`, `category`, `price`, `currency`, `billing_period`, `start_date`, `payment_status`, `notification_enabled` | `user_id` → `user.id` (foreign key) |
+
+`next_charge_date` is not stored; the API calculates it from `start_date` and
+`billing_period` on every request, so it never goes out of date.
 
 SQLite keeps the whole database in one local file, which is enough for development and the
 course demo. Moving to a server database (e.g. PostgreSQL) later would mainly change the

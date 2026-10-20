@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from sqlmodel import Session
 
 from database import initialise, make_engine
-from models import SubscriptionInput, SubscriptionList, SubscriptionOutput
+from models import Error, SubscriptionInput, SubscriptionList, SubscriptionOutput
 from service import PayallError, create_subscription, list_subscriptions
 
 
@@ -23,7 +23,12 @@ def create_app(database_file: Path, *, echo: bool = False) -> FastAPI:
         yield
         engine.dispose()
 
-    app = FastAPI(title="Payall backend", lifespan=lifespan)
+    app = FastAPI(
+        title="Payall API",
+        version="0.1.0",
+        description="API for tracking subscriptions and upcoming charges.",
+        lifespan=lifespan,
+    )
     app.state.engine = engine
 
     def get_session():
@@ -53,11 +58,35 @@ def create_app(database_file: Path, *, echo: bool = False) -> FastAPI:
             },
         )
 
-    @app.get("/subscriptions", response_model=SubscriptionList)
+    @app.get(
+        "/subscriptions",
+        response_model=SubscriptionList,
+        tags=["Subscriptions"],
+        operation_id="listSubscriptions",
+        summary="List subscriptions",
+    )
     def get_subscriptions(session: DatabaseSession):
-        return list_subscriptions(session)
+        return list_subscriptions(session, date.today())
 
-    @app.post("/subscriptions", response_model=SubscriptionOutput, status_code=201)
+    @app.post(
+        "/subscriptions",
+        response_model=SubscriptionOutput,
+        status_code=201,
+        tags=["Subscriptions"],
+        operation_id="createSubscription",
+        summary="Create a subscription",
+        responses={
+            422: {"model": Error, "description": "Invalid input or business rule violated"},
+            201: {
+                "headers": {
+                    "Location": {
+                        "description": "Relative URL of the created resource",
+                        "schema": {"type": "string"},
+                    }
+                }
+            },
+        },
+    )
     def post_subscription(
         payload: SubscriptionInput, response: Response, session: DatabaseSession
     ):

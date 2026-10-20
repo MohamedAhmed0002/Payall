@@ -17,7 +17,6 @@
       "currency": "CHF",
       "billing_period": "monthly",
       "start_date": "2025-09-12",
-      "next_charge_date": "2025-10-12",
       "payment_status": "paid",
       "notification_enabled": true
     },
@@ -31,7 +30,6 @@
       "currency": "CHF",
       "billing_period": "yearly",
       "start_date": "2026-02-01",
-      "next_charge_date": "2027-02-01",
       "payment_status": "pending",
       "notification_enabled": true
     },
@@ -45,7 +43,6 @@
       "currency": "CHF",
       "billing_period": "monthly",
       "start_date": "2025-10-03",
-      "next_charge_date": "2025-10-03",
       "payment_status": "paid",
       "notification_enabled": false
     }

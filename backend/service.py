@@ -44,8 +44,23 @@ def next_charge_date(start_date: date, billing_period: str, today: date) -> date
     return candidate
 
 
-def _to_output(subscription: Subscription) -> SubscriptionOutput:
-    return SubscriptionOutput.model_validate(subscription, from_attributes=True)
+def _to_output(subscription: Subscription, today: date) -> SubscriptionOutput:
+    return SubscriptionOutput(
+        id=subscription.id,
+        user_id=subscription.user_id,
+        service=subscription.service,
+        is_custom=subscription.is_custom,
+        category=subscription.category,
+        price=subscription.price,
+        currency=subscription.currency,
+        billing_period=subscription.billing_period,
+        start_date=subscription.start_date,
+        next_charge_date=next_charge_date(
+            subscription.start_date, subscription.billing_period, today
+        ),
+        payment_status=subscription.payment_status,
+        notification_enabled=subscription.notification_enabled,
+    )
 
 
 def create_subscription(
@@ -67,7 +82,6 @@ def create_subscription(
         currency=payload.currency,
         billing_period=payload.billing_period,
         start_date=payload.start_date,
-        next_charge_date=next_charge_date(payload.start_date, payload.billing_period, today),
         payment_status="pending",
         notification_enabled=payload.notification_enabled,
     )
@@ -75,13 +89,13 @@ def create_subscription(
         session.add(subscription)
         session.commit()
         session.refresh(subscription)
-        return _to_output(subscription)
+        return _to_output(subscription, today)
     except Exception:
         session.rollback()
         raise
 
 
-def list_subscriptions(session: Session) -> SubscriptionList:
+def list_subscriptions(session: Session, today: date) -> SubscriptionList:
     subscriptions = session.exec(
         select(Subscription)
         .where(Subscription.user_id == CURRENT_USER_ID)
@@ -94,7 +108,7 @@ def list_subscriptions(session: Session) -> SubscriptionList:
         for subscription in subscriptions
     )
     return SubscriptionList(
-        subscriptions=[_to_output(subscription) for subscription in subscriptions],
+        subscriptions=[_to_output(subscription, today) for subscription in subscriptions],
         monthly_total=round(monthly_total, 2),
         currency=user.currency if user else "CHF",
     )
