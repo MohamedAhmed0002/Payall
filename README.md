@@ -2,6 +2,8 @@
 
 **Current stage:** Milestone 1 – design draft. We update this README during the whole project.
 
+**Getting started:** See the [backend setup guide](backend/README.md).
+
 ## Project overview
 
 Payall is a web app to track spending, manage budgets and monitor subscriptions. People often forget which subscriptions they have, when they renew and how much they pay in total. For the first milestone we focus on subscriptions only: the user sees all subscriptions in one dashboard, with price, billing period, payment status and the total cost per month.
