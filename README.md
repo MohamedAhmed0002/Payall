@@ -61,66 +61,71 @@ Question to discuss: what happens if the user enters a price that is zero or neg
 
 Figma: https://www.figma.com/design/FitGxKHAvpqMSCX6qlc3aL/Web-Based-Apps
 
-The file contains low-fidelity wireframes (Dashboard, Add a subscription, Edit option 1, Edit option 2)
-and high-fidelity versions of the Dashboard, Add a subscription and Edit (based on option 2).
+The design has four screens: Dashboard, Add a subscription, Edit my subscriptions and
+Add a custom subscription. The Dashboard also has a state with the row menu (⋯) open.
+The app is for tracking only, so no bank or service account is connected. The demo date in
+the design is 17 Oct 2025.
 
 ### Navigation
 
-Dashboard is the start screen. From there the user can:
-- **Add subscription** → opens *Add a subscription* → after linking, returns to the Dashboard with the new entry in the list
-- **Edit subscriptions** → opens *Edit my subscriptions* → *Save* or *Cancel* returns to the Dashboard
-- **Add subscription → Add custom** → opens *Add a custom subscription* → *Add subscription* returns to the Dashboard
+The sidebar has Dashboard (start screen), Billing history and Settings. Billing history and
+Settings are not designed yet.
 
-In the high-fi version a sidebar (Dashboard, Subscriptions, Add subscription, Billing history, Settings)
-gives direct access to the same screens. Billing history and Settings are not designed yet.
+- Dashboard → **Add subscription** → *Add a subscription* → **Link an App** → back to Dashboard
+- *Add a subscription* → **Add custom** → *Add a custom subscription* → **Add subscription** → back to Dashboard
+- Dashboard → **Edit subscriptions** (or ⋯ → *Edit subscription* on a row) → *Edit my subscriptions* → **Save** / **Cancel** / **Delete** → back to Dashboard
+- Dashboard → ⋯ on a row → **Mark as paid** or **Delete from the list**
 
 ### 1. Dashboard (Current subscriptions)
 
-- **Shows:** list of all subscriptions with service name and logo, category, current billing period,
-  price with currency and payment status (`paid` / `pending`). Above the list: total amount;
-  the high-fi version adds summary cards for monthly total, total recurring commitments and next charge.
-- **Inputs:** search field (high-fi), sort dropdown (e.g. by renewal date), row menu (⋯) per subscription.
-- **Actions:** *Add subscription*, *Edit subscriptions*, *Review billing*.
-- **Feedback:** status badges (yellow = pending, green = paid), count of active subscriptions,
-  a notice banner when renewals are still pending (e.g. "2 renewals need attention").
+- **Shows:**
+  - Three summary cards: Monthly total (yearly plans ÷12, weekly ×52÷12), Annualized total, and Next charge (service and date).
+  - A scrollable table "All subscriptions" with a count of active ones. Each row shows logo, name, category, billing period, price and status.
+  - A sidebar box with the monthly spend.
+- **Inputs:** search field (top bar, ⌘K) and a sort dropdown for the table.
+- **Actions:** *Add subscription*, *Edit subscriptions*, and the ⋯ menu on each row
+  (*Edit subscription*, *Mark as paid*, *Delete from the list*).
+- **Feedback:**
+  - Status badges: orange "Pending" and green "Paid". Pending rows have an orange background.
+  - An orange notice above the table, e.g. "2 renewals need attention · Netflix and SBB Halbtax".
+  - A grey note under the table explaining how the monthly total is calculated.
 
 ### 2. Add a subscription
 
-- **Inputs:** search field to filter services; scrollable list of popular services
-  (Netflix, Spotify, SBB Halbtax, U-Abo) plus *Add custom* for services not in the list.
-- **Actions:** select a service, *Link an App* to add it, *Cancel* to go back without changes.
-- **Feedback:** the selected row is highlighted and a "<Service> selected" label appears above the list;
-  *Link an App* is the primary (green) button.
+- **Inputs:**
+  - Search field and a list of services, with **Add custom** for services that are not in the list.
+  - Source price and currency, billing frequency (Weekly / Monthly / Yearly), start date (YYYY-MM-DD)
+    and an optional reminder checkbox.
+- **Actions:** select a service or *Add custom*, *Link an App* to save, *Cancel* to go back.
+- **Feedback:**
+  - A step badge ("SELECT A SERVICE") and a "<Service> selected" label.
+  - An amber warning if the service already exists.
+  - A read-only "Demo equivalent" in CHF next to the price.
+  - Required fields are marked with *, and a guidance line states the rules
+    (price > 0, date format YYYY-MM-DD).
+  - A note that the details are used for tracking only.
 
-### 3. Edit my subscriptions (two options, not decided yet)
+### 3. Edit my subscriptions
 
-**Option 1 – edit all in one table.** Every subscription is a row with an inline Month/Year toggle,
-an editable price field and a *Delete* button. *Save* applies all changes at once, *Cancel* discards them.
-Fast for quick changes across several subscriptions, but limited to frequency and price.
-
-**Option 2 – edit one subscription in a form** (also the basis of the high-fi design).
-- **Inputs:** service dropdown, billing frequency (Yearly / Monthly / Weekly), price and currency,
-  start date (date picker), checkbox "Activate notification" (reminder before renewal).
-- **Actions:** *Change the name*, *Renew the billing period*, *Delete*, *Cancel*, *Save*.
-- **Feedback:** status badge (e.g. ACTIVE), total per year shown in the header,
-  "All fields required" note and helper text under the fields; *Delete* is styled red as a destructive action.
-  More fields than option 1, but only one subscription at a time.
+- **Inputs:** service dropdown, billing frequency, price and currency, start date,
+  checkbox "Activate notification" (optional renewal reminder).
+- **Actions:** *Change the name*, *Renew the billing period*, *Delete* (red), *Cancel*, *Save*.
+  Save applies the changes, Cancel discards them.
+- **Feedback:** ACTIVE badge, a "Total per year" box in the header, helper texts under the fields
+  ("Price must be greater than 0") and a note showing how the annual amount is calculated
+  (e.g. 9.90 USD ×12 ×0.80 = 95.04 CHF, demo rate).
 
 ### 4. Add a custom subscription
 
-Opened from *Add a subscription* by choosing **Add custom**, for services that are not in the list
-(e.g. a gym membership).
+Opened from *Add a subscription* via **Add custom**, for services that are not in the list
+(e.g. "Gym & wellness"). Duplicates are allowed.
 
-- **Inputs:** custom subscription name (free text with edit icon), billing frequency
-  (Yearly / Monthly / Weekly), price and currency, start date (date picker),
-  checkbox "Activate notification" (reminder before renewal).
-- **Actions:** *Add subscription* saves the entry and returns to the Dashboard,
-  *Cancel* goes back without saving.
-- **Feedback:** NEW and CUSTOM badges show that this is a user-created entry,
-  "Required" / "All fields required" notes and helper text under the fields,
-  hint in the name field ("Enter a name you'll recognize"). *Add subscription* is the primary (green) button.
-  The layout matches the Edit form (option 2), so users recognise the same fields.
-
+- **Inputs:** custom name (required), billing frequency (Weekly / Monthly / Yearly), price and currency,
+  start date, checkbox "Activate notification" and an optional category dropdown.
+- **Actions:** *Add subscription* saves the entry and returns to the Dashboard, *Cancel* goes back.
+- **Feedback:** NEW and CUSTOM badges, "Required" notes per section, a hint in the name field
+  ("Enter a name you'll recognize") and helper text under frequency and price
+  ("Positive price required · Editable amount and currency").
 ### Domain concepts and example data
 
 The main domain concepts are a **user** and the user's **subscriptions**. A user owns
