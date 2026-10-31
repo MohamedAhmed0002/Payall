@@ -159,3 +159,21 @@ def edit_subscription(
     except Exception:
         session.rollback()
         raise
+
+
+def delete_subscription(session: Session, subscription_id: int) -> None:
+    subscription = session.exec(
+        select(Subscription).where(
+            Subscription.id == subscription_id,
+            Subscription.user_id == CURRENT_USER_ID,
+        )
+    ).first()
+    if subscription is None:
+        raise PayallError("subscription_not_found", "id", status=404)
+
+    try:
+        session.delete(subscription)
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise

@@ -17,7 +17,13 @@ from models import (
     SubscriptionOutput,
     SubscriptionUpdate,
 )
-from service import PayallError, create_subscription, edit_subscription, list_subscriptions
+from service import (
+    PayallError,
+    create_subscription,
+    delete_subscription,
+    edit_subscription,
+    list_subscriptions,
+)
 
 
 def create_app(database_file: Path, *, echo: bool = False) -> FastAPI:
@@ -117,6 +123,17 @@ def create_app(database_file: Path, *, echo: bool = False) -> FastAPI:
         session: DatabaseSession,
     ):
         return edit_subscription(session, subscription_id, payload, date.today())
+
+    @app.delete(
+        "/subscriptions/{subscription_id}",
+        status_code=204,
+        tags=["Subscriptions"],
+        operation_id="deleteSubscription",
+        summary="Delete a subscription",
+        responses={404: {"model": Error, "description": "Subscription not found"}},
+    )
+    def remove_subscription(subscription_id: int, session: DatabaseSession):
+        delete_subscription(session, subscription_id)
 
     return app
 

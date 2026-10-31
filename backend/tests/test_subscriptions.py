@@ -104,6 +104,32 @@ def test_edit_subscription_returns_not_found_for_other_subscription(tmp_path):
     }
 
 
+def test_delete_subscription_removes_it_and_updates_total(tmp_path):
+    with client_for(tmp_path) as client:
+        response = client.delete("/subscriptions/1")
+
+        assert response.status_code == 204
+        assert response.content == b""
+        subscriptions = client.get("/subscriptions").json()
+
+    assert [item["service"] for item in subscriptions["subscriptions"]] == [
+        "SBB Halbtax",
+        "Spotify",
+    ]
+    assert subscriptions["monthly_total"] == 30.78
+
+
+def test_delete_subscription_returns_not_found_for_missing_subscription(tmp_path):
+    with client_for(tmp_path) as client:
+        response = client.delete("/subscriptions/999")
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "error": "subscription_not_found",
+        "field": "id",
+    }
+
+
 def test_rejects_non_positive_prices(tmp_path):
     with client_for(tmp_path) as client:
         for price in (0, -5):
