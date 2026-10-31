@@ -10,8 +10,14 @@ from fastapi.responses import JSONResponse
 from sqlmodel import Session
 
 from database import initialise, make_engine
-from models import Error, SubscriptionInput, SubscriptionList, SubscriptionOutput
-from service import PayallError, create_subscription, list_subscriptions
+from models import (
+    Error,
+    SubscriptionInput,
+    SubscriptionList,
+    SubscriptionOutput,
+    SubscriptionUpdate,
+)
+from service import PayallError, create_subscription, edit_subscription, list_subscriptions
 
 
 def create_app(database_file: Path, *, echo: bool = False) -> FastAPI:
@@ -93,6 +99,24 @@ def create_app(database_file: Path, *, echo: bool = False) -> FastAPI:
         result = create_subscription(session, payload, date.today())
         response.headers["Location"] = f"/subscriptions/{result.id}"
         return result
+
+    @app.patch(
+        "/subscriptions/{subscription_id}",
+        response_model=SubscriptionOutput,
+        tags=["Subscriptions"],
+        operation_id="editSubscription",
+        summary="Edit a subscription",
+        responses={
+            404: {"model": Error, "description": "Subscription not found"},
+            422: {"model": Error, "description": "Invalid input or business rule violated"},
+        },
+    )
+    def patch_subscription(
+        subscription_id: int,
+        payload: SubscriptionUpdate,
+        session: DatabaseSession,
+    ):
+        return edit_subscription(session, subscription_id, payload, date.today())
 
     return app
 

@@ -50,6 +50,19 @@ class SubscriptionInput(BaseModel):
     notification_enabled: bool = False
 
 
+class SubscriptionUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+
+    service: str | None = None
+    is_custom: bool | None = None
+    category: str | None = None
+    price: float | None = None
+    currency: Literal["CHF"] | None = None
+    billing_period: Literal["weekly", "monthly", "yearly"] | None = None
+    start_date: date | None = None
+    notification_enabled: bool | None = None
+
+
 class SubscriptionOutput(SubscriptionInput):
     id: int
     user_id: int

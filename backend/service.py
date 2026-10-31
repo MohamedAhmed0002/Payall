@@ -3,7 +3,14 @@ from datetime import date, timedelta
 
 from sqlmodel import Session, select
 
-from models import Subscription, SubscriptionInput, SubscriptionList, SubscriptionOutput, User
+from models import (
+    Subscription,
+    SubscriptionInput,
+    SubscriptionList,
+    SubscriptionOutput,
+    SubscriptionUpdate,
+    User,
+)
 
 
 # Temporary: replaced by the logged-in user once POST /login exists.
@@ -94,7 +101,6 @@ def create_subscription(
         session.rollback()
         raise
 
-
 def list_subscriptions(session: Session, today: date) -> SubscriptionList:
     subscriptions = session.exec(
         select(Subscription)
@@ -112,3 +118,44 @@ def list_subscriptions(session: Session, today: date) -> SubscriptionList:
         monthly_total=round(monthly_total, 2),
         currency=user.currency if user else "CHF",
     )
+
+
+def edit_subscription(
+    session: Session,
+    subscription_id: int,
+    payload: SubscriptionUpdate,
+    today: date,
+) -> SubscriptionOutput:
+    subscription = session.exec(
+        select(Subscription).where(
+            Subscription.id == subscription_id,
+            Subscription.user_id == CURRENT_USER_ID,
+        )
+    ).first()
+    if subscription is None:
+        raise PayallError("subscription_not_found", "id", status=404)
+
+    updates = payload.model_dump(exclude_unset=True)
+    if "price" in updates and (updates["price"] is None or updates["price"] <= 0):
+        raise PayallError("price_must_be_positive", "price")
+    if "service" in updates:
+        if updates["service"] is None or not updates["service"].strip():
+            raise PayallError("service_name_required", "service")
+        updates["service"] = updates["service"].strip()
+    if "category" in updates:
+        if updates["category"] is None or not updates["category"].strip():
+            raise PayallError("category_required", "category")
+        updates["category"] = updates["category"].strip()
+
+    try:
+        for field, value in updates.items():
+            if value is None:
+                raise PayallError("invalid_input", field)
+            setattr(subscription, field, value)
+        session.add(subscription)
+        session.commit()
+        session.refresh(subscription)
+        return _to_output(subscription, today)
+    except Exception:
+        session.rollback()
+        raise

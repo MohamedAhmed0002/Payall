@@ -69,6 +69,41 @@ def test_create_custom_subscription(tmp_path):
     assert response.json()["is_custom"] is True
 
 
+def test_edit_subscription_updates_fields(tmp_path):
+    with client_for(tmp_path) as client:
+        response = client.patch(
+            "/subscriptions/1",
+            json={"price": 19.90, "notification_enabled": True},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["price"] == 19.90
+        assert response.json()["notification_enabled"] is True
+        assert response.json()["service"] == "Netflix"
+
+
+def test_edit_subscription_rejects_invalid_price(tmp_path):
+    with client_for(tmp_path) as client:
+        response = client.patch("/subscriptions/1", json={"price": 0})
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "error": "price_must_be_positive",
+        "field": "price",
+    }
+
+
+def test_edit_subscription_returns_not_found_for_other_subscription(tmp_path):
+    with client_for(tmp_path) as client:
+        response = client.patch("/subscriptions/999", json={"price": 19.90})
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "error": "subscription_not_found",
+        "field": "id",
+    }
+
+
 def test_rejects_non_positive_prices(tmp_path):
     with client_for(tmp_path) as client:
         for price in (0, -5):
