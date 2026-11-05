@@ -44,6 +44,7 @@ def initialise(engine):
         subscriptions = []
         for row in seed["subscriptions"]:
             row["start_date"] = date.fromisoformat(row["start_date"])
+            row["tracked_since"] = date.fromisoformat(row["tracked_since"])
             if row.get("auto_pay_since") is not None:
                 row["auto_pay_since"] = date.fromisoformat(row["auto_pay_since"])
             row["category_id"] = categories[row.pop("category")]

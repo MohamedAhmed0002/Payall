@@ -29,6 +29,7 @@
       "currency": "CHF",
       "billing_period": "monthly",
       "start_date": "2025-09-12",
+      "tracked_since": "2025-09-12",
       "auto_pay": true,
       "auto_pay_since": "2025-09-12",
       "notification_enabled": true
@@ -43,6 +44,7 @@
       "currency": "CHF",
       "billing_period": "yearly",
       "start_date": "2026-02-01",
+      "tracked_since": "2026-02-01",
       "auto_pay": false,
       "notification_enabled": true
     },
@@ -56,6 +58,7 @@
       "currency": "CHF",
       "billing_period": "monthly",
       "start_date": "2025-10-03",
+      "tracked_since": "2025-10-03",
       "auto_pay": true,
       "auto_pay_since": "2025-10-03",
       "notification_enabled": false

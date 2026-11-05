@@ -2,7 +2,7 @@ import os
 from contextlib import asynccontextmanager
 from datetime import date
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
@@ -75,14 +75,10 @@ def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> 
         detail = error.errors()[0]
         location = detail.get("loc", ())
         field = next((part for part in reversed(location) if isinstance(part, str)), "body")
-        return JSONResponse(
-            status_code=422,
-            content={
-                "error": "invalid_input",
-                "field": field,
-                "message": detail.get("msg", "Invalid input"),
-            },
-        )
+        content = {"error": "invalid_input", "field": field}
+        if field not in {"search", "sort", "order"}:
+            content["message"] = detail.get("msg", "Invalid input")
+        return JSONResponse(status_code=422, content=content)
 
     @app.get(
         "/subscriptions",
@@ -95,13 +91,17 @@ def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> 
         session: DatabaseSession,
         search: str | None = Query(
             default=None,
+            max_length=100,
             description="Case-insensitive substring matched against service or category.",
         ),
-        sort: str = Query(
-            default="id",
+        sort: Literal["next_charge_date", "price", "service"] | None = Query(
+            default=None,
             description="Sort by next_charge_date, price, or service.",
         ),
-        order: str = Query(default="asc", description="Sort direction: asc or desc."),
+        order: Literal["asc", "desc"] = Query(
+            default="asc",
+            description="Sort direction: asc or desc.",
+        ),
     ):
         return list_subscriptions(session, today(), search, sort, order)
 

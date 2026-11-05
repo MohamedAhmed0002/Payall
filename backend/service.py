@@ -89,6 +89,13 @@ def from_rappen(value: int) -> Decimal:
     return Decimal(value) / Decimal(100)
 
 
+def _one_year_after(value: date) -> date:
+    try:
+        return value.replace(year=value.year + 1)
+    except ValueError:
+        return value.replace(year=value.year + 1, day=28)
+
+
 def get_own_subscription(session: Session, subscription_id: int) -> Subscription:
     subscription = session.exec(
         select(Subscription).where(
@@ -144,6 +151,8 @@ def _period_start(subscription: Subscription, today: date) -> date | None:
 
 def _payment_status(session: Session, subscription: Subscription, today: date) -> str:
     period_start = _period_start(subscription, today)
+    if period_start is not None and period_start < subscription.tracked_since:
+        return "paid"
     if period_start is None:
         payment = session.exec(
             select(Payment).where(Payment.subscription_id == subscription.id)
@@ -194,21 +203,29 @@ def create_subscription(session: Session, payload: SubscriptionInput, today: dat
     record_due_autopay_payments(session, today)
     if payload.price <= 0:
         raise PayallError("price_must_be_positive", "price")
-    if not payload.service.strip():
+    service = payload.service.strip()
+    if not service:
         raise PayallError("service_name_required", "service")
+    if len(service) > 100:
+        raise PayallError("service_name_too_long", "service")
+    if payload.price > Decimal("100000.00"):
+        raise PayallError("price_too_high", "price")
+    if not date(2000, 1, 1) <= payload.start_date <= _one_year_after(today):
+        raise PayallError("start_date_out_of_range", "start_date")
     if session.get(Category, payload.category_id) is None:
         raise PayallError("category_not_found", "category_id")
     subscription = Subscription(
         user_id=CURRENT_USER_ID,
-        service=payload.service.strip(),
+        service=service,
         is_custom=payload.is_custom,
         category_id=payload.category_id,
         price_rappen=to_rappen(payload.price),
         currency=payload.currency,
         billing_period=payload.billing_period,
         start_date=payload.start_date,
+        tracked_since=today,
         auto_pay=payload.auto_pay,
-        auto_pay_since=payload.start_date if payload.auto_pay else None,
+        auto_pay_since=today if payload.auto_pay else None,
         notification_enabled=payload.notification_enabled,
     )
     try:
@@ -359,10 +376,7 @@ def list_subscriptions(
     order: str = "asc",
 ) -> SubscriptionList:
     record_due_autopay_payments(session, today)
-    if sort not in ("id", "next_charge_date", "price", "service"):
-        raise PayallError("invalid_input", "sort")
-    if order not in ("asc", "desc"):
-        raise PayallError("invalid_input", "order")
+    sort = sort or "id"
     cleaned_search = search.strip() if search else ""
     if len(cleaned_search) > 100:
         raise PayallError("invalid_input", "search")
@@ -372,10 +386,16 @@ def list_subscriptions(
         .where(Subscription.user_id == CURRENT_USER_ID)
     )
     if cleaned_search:
-        pattern = f"%{cleaned_search.lower()}%"
+        escaped_search = (
+            cleaned_search.lower()
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_")
+        )
+        pattern = f"%{escaped_search}%"
         query = query.where(
-            (func.lower(Subscription.service).like(pattern))
-            | (func.lower(Category.name).like(pattern))
+            (func.lower(Subscription.service).like(pattern, escape="\\"))
+            | (func.lower(Category.name).like(pattern, escape="\\"))
         )
     if sort == "price":
         primary = Subscription.price_rappen.desc() if order == "desc" else Subscription.price_rappen.asc()
@@ -424,12 +444,20 @@ def edit_subscription(session: Session, subscription_id: int, payload: Subscript
         raise PayallError("subscription_cancelled", "id", status=409)
     updates = payload.model_dump(exclude_unset=True)
     client_fields = set(updates)
-    if "price" in updates and (updates["price"] is None or updates["price"] <= 0):
-        raise PayallError("price_must_be_positive", "price")
+    if "price" in updates:
+        if updates["price"] is None or updates["price"] <= 0:
+            raise PayallError("price_must_be_positive", "price")
+        if updates["price"] > Decimal("100000.00"):
+            raise PayallError("price_too_high", "price")
     if "service" in updates:
         if updates["service"] is None or not updates["service"].strip():
             raise PayallError("service_name_required", "service")
         updates["service"] = updates["service"].strip()
+        if len(updates["service"]) > 100:
+            raise PayallError("service_name_too_long", "service")
+    if "start_date" in updates and updates["start_date"] is not None:
+        if not date(2000, 1, 1) <= updates["start_date"] <= _one_year_after(today):
+            raise PayallError("start_date_out_of_range", "start_date")
     if "category_id" in updates and (
         updates["category_id"] is None or session.get(Category, updates["category_id"]) is None
     ):
@@ -459,6 +487,8 @@ def mark_subscription_paid(session: Session, subscription_id: int, today: date) 
     record_due_autopay_payments(session, today)
     subscription = get_own_subscription(session, subscription_id)
     period_start = _period_start(subscription, today)
+    if period_start is not None and period_start < subscription.tracked_since:
+        raise PayallError("already_paid", "id", status=409)
     if subscription.auto_pay and (
         subscription.auto_pay_since is None
         or period_start is None

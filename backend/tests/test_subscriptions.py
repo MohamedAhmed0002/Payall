@@ -150,6 +150,7 @@ def test_edit_subscription_plan_change_starts_at_next_charge(tmp_path):
             currency="CHF",
             billing_period="monthly",
             start_date=date(2026, 1, 15),
+            tracked_since=date(2026, 3, 20),
             auto_pay=False,
             notification_enabled=False,
         )
