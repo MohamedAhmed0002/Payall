@@ -9,12 +9,16 @@ from sqlmodel import Field, SQLModel
 
 class User(SQLModel, table=True):
     __tablename__ = "user"
-    __table_args__ = {"sqlite_autoincrement": True}
+    __table_args__ = (
+        CheckConstraint("reminder_days BETWEEN 1 AND 30"),
+        {"sqlite_autoincrement": True},
+    )
 
     id: int | None = Field(default=None, primary_key=True)
     name: str
     email: str = Field(unique=True)
     currency: str = "CHF"
+    reminder_days: int = 7
     created_at: datetime
 
 
@@ -153,3 +157,55 @@ class PaymentOutput(BaseModel):
     @field_serializer("amount")
     def serialize_amount(self, value: Decimal) -> float:
         return float(value)
+
+
+class SettingsOutput(BaseModel):
+    reminder_days: int
+    currency: str
+
+
+class SettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reminder_days: int
+
+
+class NotificationItem(BaseModel):
+    subscription_id: int
+    service: str
+    reason: Literal["payment_pending", "upcoming_charge"]
+    date: date
+
+
+class NotificationOutput(BaseModel):
+    count: int
+    message: str | None
+    items: list[NotificationItem]
+
+
+class HistoryPayment(BaseModel):
+    type: Literal["payment"]
+    date: date
+    subscription_id: int
+    service: str
+    amount: Decimal
+    method: Literal["auto", "manual"]
+
+    @field_serializer("amount")
+    def serialize_amount(self, value: Decimal) -> float:
+        return float(value)
+
+
+class HistoryCancellation(BaseModel):
+    type: Literal["cancellation"]
+    date: date
+    subscription_id: int
+    service: str
+    ends_on: date
+
+
+HistoryItem = HistoryPayment | HistoryCancellation
+
+
+class HistoryOutput(BaseModel):
+    items: list[HistoryItem]

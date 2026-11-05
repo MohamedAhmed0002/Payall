@@ -18,6 +18,10 @@ from models import (
     SubscriptionOutput,
     SubscriptionUpdate,
     PaymentOutput,
+    HistoryOutput,
+    NotificationOutput,
+    SettingsOutput,
+    SettingsUpdate,
 )
 from service import (
     PayallError,
@@ -29,6 +33,10 @@ from service import (
     mark_subscription_paid,
     cancel_subscription,
     read_subscription,
+    list_notifications,
+    list_history,
+    read_settings,
+    update_settings,
 )
 
 
@@ -106,6 +114,46 @@ def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> 
     )
     def get_categories(session: DatabaseSession):
         return list_categories(session)
+
+    @app.get(
+        "/settings",
+        response_model=SettingsOutput,
+        tags=["Settings"],
+        operation_id="readSettings",
+        summary="Read settings",
+    )
+    def get_settings(session: DatabaseSession):
+        return read_settings(session)
+
+    @app.patch(
+        "/settings",
+        response_model=SettingsOutput,
+        tags=["Settings"],
+        operation_id="updateSettings",
+        summary="Update settings",
+    )
+    def patch_settings(payload: SettingsUpdate, session: DatabaseSession):
+        return update_settings(session, payload)
+
+    @app.get(
+        "/notifications",
+        response_model=NotificationOutput,
+        tags=["Notifications"],
+        operation_id="listNotifications",
+        summary="List notifications",
+    )
+    def get_notifications(session: DatabaseSession):
+        return list_notifications(session, today())
+
+    @app.get(
+        "/history",
+        response_model=HistoryOutput,
+        tags=["History"],
+        operation_id="listHistory",
+        summary="List payment history",
+    )
+    def get_history(session: DatabaseSession, type: str | None = None):
+        return list_history(session, type, today())
 
     @app.post(
         "/subscriptions",

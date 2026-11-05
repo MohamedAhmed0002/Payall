@@ -8,6 +8,13 @@ from models import (
     Category,
     Payment,
     PaymentOutput,
+    HistoryCancellation,
+    HistoryOutput,
+    HistoryPayment,
+    NotificationItem,
+    NotificationOutput,
+    SettingsOutput,
+    SettingsUpdate,
     Subscription,
     SubscriptionInput,
     SubscriptionList,
@@ -215,6 +222,121 @@ def read_subscription(session: Session, subscription_id: int, today: date) -> Su
 
 def list_categories(session: Session) -> list[Category]:
     return session.exec(select(Category).order_by(Category.id)).all()
+
+
+def read_settings(session: Session) -> SettingsOutput:
+    user = session.get(User, CURRENT_USER_ID)
+    if user is None:
+        raise PayallError("user_not_found", "id", status=404)
+    return SettingsOutput(reminder_days=user.reminder_days, currency=user.currency)
+
+
+def update_settings(session: Session, payload: SettingsUpdate) -> SettingsOutput:
+    if not 1 <= payload.reminder_days <= 30:
+        raise PayallError("invalid_input", "reminder_days")
+    user = session.get(User, CURRENT_USER_ID)
+    if user is None:
+        raise PayallError("user_not_found", "id", status=404)
+    user.reminder_days = payload.reminder_days
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return SettingsOutput(reminder_days=user.reminder_days, currency=user.currency)
+
+
+def list_notifications(session: Session, today: date) -> NotificationOutput:
+    record_due_autopay_payments(session, today)
+    settings = read_settings(session)
+    subscriptions = session.exec(
+        select(Subscription)
+        .where(
+            Subscription.user_id == CURRENT_USER_ID,
+            Subscription.notification_enabled,
+        )
+        .order_by(Subscription.id)
+    ).all()
+    items = []
+    for subscription in subscriptions:
+        output = _to_output(session, subscription, today)
+        if output.status != "active":
+            continue
+        period_start = _period_start(subscription, today)
+        if output.payment_status == "pending" and not subscription.auto_pay and period_start is not None:
+            items.append(
+                NotificationItem(
+                    subscription_id=subscription.id,
+                    service=subscription.service,
+                    reason="payment_pending",
+                    date=period_start,
+                )
+            )
+        elif output.next_charge_date is not None and output.next_charge_date <= today + timedelta(days=settings.reminder_days):
+            items.append(
+                NotificationItem(
+                    subscription_id=subscription.id,
+                    service=subscription.service,
+                    reason="upcoming_charge",
+                    date=output.next_charge_date,
+                )
+            )
+    names = ", ".join(item.service for item in items)
+    message = None
+    if items:
+        noun = "renewal" if len(items) == 1 else "renewals"
+        verb = "needs" if len(items) == 1 else "need"
+        message = f"{len(items)} {noun} {verb} attention: {names}"
+    return NotificationOutput(count=len(items), message=message, items=items)
+
+
+def list_history(session: Session, event_type: str | None, today: date) -> HistoryOutput:
+    record_due_autopay_payments(session, today)
+    if event_type not in (None, "payment", "cancellation"):
+        raise PayallError("invalid_input", "type")
+    history = []
+    if event_type in (None, "payment"):
+        rows = session.exec(
+            select(Payment, Subscription)
+            .join(Subscription, Payment.subscription_id == Subscription.id)
+            .where(Subscription.user_id == CURRENT_USER_ID)
+        ).all()
+        history.extend(
+            (
+                payment.paid_on,
+                payment.id,
+                HistoryPayment(
+                    type="payment",
+                    date=payment.paid_on,
+                    subscription_id=subscription.id,
+                    service=subscription.service,
+                    amount=from_rappen(payment.amount_rappen),
+                    method=payment.method,
+                ),
+            )
+            for payment, subscription in rows
+        )
+    if event_type in (None, "cancellation"):
+        subscriptions = session.exec(
+            select(Subscription).where(
+                Subscription.user_id == CURRENT_USER_ID,
+                Subscription.cancelled_at.is_not(None),
+            )
+        ).all()
+        history.extend(
+            (
+                subscription.cancelled_at,
+                subscription.id,
+                HistoryCancellation(
+                    type="cancellation",
+                    date=subscription.cancelled_at,
+                    subscription_id=subscription.id,
+                    service=subscription.service,
+                    ends_on=subscription.ends_on,
+                ),
+            )
+            for subscription in subscriptions
+        )
+    history.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    return HistoryOutput(items=[item[2] for item in history])
 
 
 def list_subscriptions(session: Session, today: date) -> SubscriptionList:

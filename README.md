@@ -40,7 +40,7 @@ We review each other's work so everyone understands the draft.
 - As an admin, I want to see the next charge date, so that I am not surprised by upcoming payments.
 - As an admin, I want to search and sort the subscriptions (e.g. by renewal date), so that I can find a subscription quickly.
 - As an admin, I want to add a custom subscription, so that services not in the list (e.g. a gym membership) are also tracked.
-- As an admin, I want to activate a notification for a subscription, so that I get a reminder before it renews.
+- As an admin, I want to turn on reminders for selected subscriptions and get one combined in-app message a few days before they renew or when a manual payment is pending, so that I am not surprised by payments.
 
 Outside the initial scope: bank connection, automatic cancellation, budgets.
 
@@ -246,10 +246,14 @@ outside this milestone.
 | Add a custom subscription | `POST` | `/subscriptions` | `{ "service": "Local Gym", "is_custom": true, "category_id": 4, "price": 45.00, "currency": "CHF", "billing_period": "monthly", "start_date": "2025-09-12", "auto_pay": false, "notification_enabled": false }` | `201 Created` — new subscription object with `is_custom: true` and calculated `payment_status` | `422 Unprocessable Entity` — `{ "error": "service_name_required", "field": "service" }` or `{ "error": "category_not_found", "field": "category_id" }` | Categories come from the fixed category list. |
 | Read one subscription | `GET` | `/subscriptions/{id}` | No request body. Example path: `/subscriptions/1` | `200 OK` — subscription object | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` | – |
 | List categories | `GET` | `/categories` | No request body | `200 OK` — ordered list of `{ "id": 1, "name": "Entertainment" }` objects | – | The frontend uses this list for the category dropdown. |
-| Change a subscription or activate its notification | `PATCH` | `/subscriptions/{id}` | `{ "price": 19.90, "category_id": 5, "notification_enabled": true }` | `200 OK` — updated subscription object. `is_custom` cannot be changed; changing `billing_period` restarts the period from the next charge date. | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` or `409 Conflict` — `{ "error": "subscription_cancelled", "field": "id" }` | How many days before `next_charge_date` should a notification be sent, and should users choose that timing? |
+| Change a subscription or activate its notification | `PATCH` | `/subscriptions/{id}` | `{ "price": 19.90, "category_id": 5, "notification_enabled": true }` | `200 OK` — updated subscription object. `is_custom` cannot be changed; changing `billing_period` restarts the period from the next charge date. | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` or `409 Conflict` — `{ "error": "subscription_cancelled", "field": "id" }` | Reminder timing: default 7 days, changed in `/settings` |
 | Mark a manual payment | `POST` | `/subscriptions/{id}/payments` | No request body | `201 Created` — payment object | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` or `409 Conflict` — `{ "error": "auto_pay_subscription", "field": "auto_pay" }` / `{ "error": "nothing_due", "field": "start_date" }` / `{ "error": "already_paid", "field": "id" }` | – |
 | Cancel a subscription | `POST` | `/subscriptions/{id}/cancel` | No request body | `200 OK` — cancelled subscription object | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` or `409 Conflict` — `{ "error": "already_cancelled", "field": "id" }` | – |
 | Remove a subscription | `DELETE` | `/subscriptions/{id}` | No request body. Example path: `/subscriptions/1` | `204 No Content` | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` | Is deletion permanent, or should the API keep an inactive/history record for billing history? |
+| Read settings | `GET` | `/settings` | No request body | `200 OK` — `{ "reminder_days": 7, "currency": "CHF" }` | – | – |
+| Update reminder timing | `PATCH` | `/settings` | `{ "reminder_days": 3 }` | `200 OK` — updated settings | `422 Unprocessable Entity` — `{ "error": "invalid_input", "field": "reminder_days" }` | – |
+| List in-app notifications | `GET` | `/notifications` | No request body | `200 OK` — calculated renewal reminders and pending manual payments | – | – |
+| List payment history | `GET` | `/history` | Optional `type=payment` or `type=cancellation` | `200 OK` — newest payment and cancellation events first | `422 Unprocessable Entity` — `{ "error": "invalid_input", "field": "type" }` | – |
 
 For the list operation, `monthly_total` is calculated by the API from each subscription's
 `price` and `billing_period`; for the three seeded subscriptions it is `49.68` CHF.
@@ -280,7 +284,7 @@ In code, we use the ORM **SQLModel** (built on SQLAlchemy), following the
 
 | Table | Main columns | Relationship |
 |---|---|---|
-| `user` | `id`, `name`, `email`, `currency`, `created_at` | One user has many subscriptions |
+| `user` | `id`, `name`, `email`, `currency`, `reminder_days`, `created_at` | One user has many subscriptions |
 | `category` | `id`, `name` | Fixed unique category list |
 | `subscription` | `id`, `user_id`, `service`, `is_custom`, `category_id`, `price_rappen`, `currency`, `billing_period`, `start_date`, `auto_pay`, `cancelled_at`, `ends_on`, `notification_enabled` | `user_id` → `user.id`; `category_id` → `category.id` (foreign keys) |
 | `payment` | `id`, `subscription_id`, `period_start`, `amount_rappen`, `paid_on`, `method` | `subscription_id` → `subscription.id` |
@@ -330,7 +334,7 @@ We looked at normal subscription tracker apps. We like the simple dashboard with
 | Milestone | Available evidence | Status / next step |
 |---|---|---|
 | 1 – Design draft | Analysis, workflow, sketches, example JSON and proposed operations | Draft done, open questions listed above |
-| 2 – Contract and available implementation | OpenAPI contract and implemented/tested progress | Update later |
+| 2 – Contract and available implementation | OpenAPI contract, subscriptions, payments, settings, notifications and history endpoints; pytest passes | Implemented and tested |
 | Integration – later | Revised feature scope, frontend decision, architecture and a connected workflow | Update later |
 
 ## 4. References and acknowledgements
