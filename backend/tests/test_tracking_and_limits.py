@@ -92,14 +92,16 @@ def test_seed_history_and_notifications_remain_unchanged(tmp_path):
 def test_search_percent_is_literal_and_sort_validation_remains(tmp_path):
     with client_for(tmp_path / "payall.sqlite") as client:
         assert client.get("/subscriptions?search=%25").json()["subscriptions"] == []
-        assert client.get("/subscriptions?sort=foo").json() == {
-            "error": "invalid_input",
-            "field": "sort",
-        }
-        assert client.get("/subscriptions?order=up").json() == {
-            "error": "invalid_input",
-            "field": "order",
-        }
+        for query, field in (
+            ("/subscriptions?sort=foo", "sort"),
+            ("/subscriptions?order=up", "order"),
+        ):
+            response = client.get(query)
+            assert response.status_code == 422
+            body = response.json()
+            assert body["error"] == "invalid_input"
+            assert body["field"] == field
+            assert body["message"]
 
 
 def test_post_input_limits(tmp_path):

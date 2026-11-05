@@ -75,10 +75,14 @@ def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> 
         detail = error.errors()[0]
         location = detail.get("loc", ())
         field = next((part for part in reversed(location) if isinstance(part, str)), "body")
-        content = {"error": "invalid_input", "field": field}
-        if field not in {"search", "sort", "order"}:
-            content["message"] = detail.get("msg", "Invalid input")
-        return JSONResponse(status_code=422, content=content)
+        return JSONResponse(
+            status_code=422,
+            content={
+                "error": "invalid_input",
+                "field": field,
+                "message": detail.get("msg", "Invalid input"),
+            },
+        )
 
     @app.get(
         "/subscriptions",

@@ -71,18 +71,17 @@ def test_cancelled_subscriptions_sort_last_by_next_charge_date(tmp_path):
 
 def test_invalid_search_and_sort_parameters(tmp_path):
     with client_for(tmp_path / "payall.sqlite") as client:
-        assert client.get("/subscriptions?sort=foo").json() == {
-            "error": "invalid_input",
-            "field": "sort",
-        }
-        assert client.get("/subscriptions?order=up").json() == {
-            "error": "invalid_input",
-            "field": "order",
-        }
-        assert client.get("/subscriptions?search=" + "x" * 101).json() == {
-            "error": "invalid_input",
-            "field": "search",
-        }
+        for query, field in (
+            ("/subscriptions?sort=foo", "sort"),
+            ("/subscriptions?order=up", "order"),
+            ("/subscriptions?search=" + "x" * 101, "search"),
+        ):
+            response = client.get(query)
+            assert response.status_code == 422
+            body = response.json()
+            assert body["error"] == "invalid_input"
+            assert body["field"] == field
+            assert body["message"]
 
 
 def test_switching_autopay_off_allows_later_manual_payment(tmp_path):
