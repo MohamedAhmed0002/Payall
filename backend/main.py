@@ -90,6 +90,7 @@ def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> 
         tags=["Subscriptions"],
         operation_id="listSubscriptions",
         summary="List subscriptions",
+        responses={422: {"model": Error, "description": "Invalid input"}},
     )
     def get_subscriptions(
         session: DatabaseSession,
@@ -115,7 +116,10 @@ def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> 
         tags=["Subscriptions"],
         operation_id="readSubscription",
         summary="Read a subscription",
-        responses={404: {"model": Error, "description": "Subscription not found"}},
+        responses={
+            404: {"model": Error, "description": "Subscription not found"},
+            422: {"model": Error, "description": "Invalid input"},
+        },
     )
     def get_subscription(subscription_id: int, session: DatabaseSession):
         return read_subscription(session, subscription_id, today())
@@ -146,6 +150,7 @@ def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> 
         tags=["Settings"],
         operation_id="updateSettings",
         summary="Update settings",
+        responses={422: {"model": Error, "description": "Invalid input"}},
     )
     def patch_settings(payload: SettingsUpdate, session: DatabaseSession):
         return update_settings(session, payload)
@@ -166,6 +171,7 @@ def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> 
         tags=["History"],
         operation_id="listHistory",
         summary="List payment history",
+        responses={422: {"model": Error, "description": "Invalid input"}},
     )
     def get_history(session: DatabaseSession, type: str | None = None):
         return list_history(session, type, today())
@@ -225,6 +231,7 @@ def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> 
         responses={
             404: {"model": Error, "description": "Subscription not found"},
             409: {"model": Error, "description": "Payment cannot be recorded"},
+            422: {"model": Error, "description": "Invalid input"},
         },
     )
     def post_payment(subscription_id: int, session: DatabaseSession):
@@ -239,6 +246,7 @@ def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> 
         responses={
             404: {"model": Error, "description": "Subscription not found"},
             409: {"model": Error, "description": "Subscription is already cancelled"},
+            422: {"model": Error, "description": "Invalid input"},
         },
     )
     def post_cancel(subscription_id: int, session: DatabaseSession):
@@ -250,7 +258,10 @@ def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> 
         tags=["Subscriptions"],
         operation_id="deleteSubscription",
         summary="Delete a subscription",
-        responses={404: {"model": Error, "description": "Subscription not found"}},
+        responses={
+            404: {"model": Error, "description": "Subscription not found"},
+            422: {"model": Error, "description": "Invalid input"},
+        },
     )
     def remove_subscription(subscription_id: int, session: DatabaseSession):
         delete_subscription(session, subscription_id, today())
