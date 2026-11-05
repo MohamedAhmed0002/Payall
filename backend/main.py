@@ -4,7 +4,7 @@ from datetime import date
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Request, Response
+from fastapi import Depends, FastAPI, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlmodel import Session
@@ -91,8 +91,19 @@ def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> 
         operation_id="listSubscriptions",
         summary="List subscriptions",
     )
-    def get_subscriptions(session: DatabaseSession):
-        return list_subscriptions(session, today())
+    def get_subscriptions(
+        session: DatabaseSession,
+        search: str | None = Query(
+            default=None,
+            description="Case-insensitive substring matched against service or category.",
+        ),
+        sort: str = Query(
+            default="id",
+            description="Sort by next_charge_date, price, or service.",
+        ),
+        order: str = Query(default="asc", description="Sort direction: asc or desc."),
+    ):
+        return list_subscriptions(session, today(), search, sort, order)
 
     @app.get(
         "/subscriptions/{subscription_id}",

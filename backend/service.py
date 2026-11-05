@@ -2,6 +2,7 @@ import calendar
 from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from models import (
@@ -266,7 +267,13 @@ def list_notifications(session: Session, today: date) -> NotificationOutput:
         if output.status != "active":
             continue
         period_start = _period_start(subscription, today)
-        if output.payment_status == "pending" and not subscription.auto_pay and period_start is not None:
+        autopay_covers_period = (
+            subscription.auto_pay
+            and subscription.auto_pay_since is not None
+            and period_start is not None
+            and period_start >= subscription.auto_pay_since
+        )
+        if output.payment_status == "pending" and not autopay_covers_period and period_start is not None:
             items.append(
                 NotificationItem(
                     subscription_id=subscription.id,
@@ -344,16 +351,55 @@ def list_history(session: Session, event_type: str | None, today: date) -> Histo
     return HistoryOutput(items=[item[2] for item in history])
 
 
-def list_subscriptions(session: Session, today: date) -> SubscriptionList:
+def list_subscriptions(
+    session: Session,
+    today: date,
+    search: str | None = None,
+    sort: str = "id",
+    order: str = "asc",
+) -> SubscriptionList:
     record_due_autopay_payments(session, today)
-    all_subscriptions = session.exec(
+    if sort not in ("id", "next_charge_date", "price", "service"):
+        raise PayallError("invalid_input", "sort")
+    if order not in ("asc", "desc"):
+        raise PayallError("invalid_input", "order")
+    cleaned_search = search.strip() if search else ""
+    if len(cleaned_search) > 100:
+        raise PayallError("invalid_input", "search")
+    query = (
         select(Subscription)
+        .join(Category, Subscription.category_id == Category.id)
         .where(Subscription.user_id == CURRENT_USER_ID)
-        .order_by(Subscription.id)
-    ).all()
+    )
+    if cleaned_search:
+        pattern = f"%{cleaned_search.lower()}%"
+        query = query.where(
+            (func.lower(Subscription.service).like(pattern))
+            | (func.lower(Category.name).like(pattern))
+        )
+    if sort == "price":
+        primary = Subscription.price_rappen.desc() if order == "desc" else Subscription.price_rappen.asc()
+        query = query.order_by(primary, Subscription.id.asc())
+    elif sort == "service":
+        primary = func.lower(Subscription.service).desc() if order == "desc" else func.lower(Subscription.service).asc()
+        query = query.order_by(primary, Subscription.id.asc())
+    else:
+        primary = Subscription.id.desc() if order == "desc" else Subscription.id.asc()
+        query = query.order_by(primary)
+    all_subscriptions = session.exec(query).all()
     outputs = [_to_output(session, item, today) for item in all_subscriptions]
+    visible = [_to_output(session, item, today) for item in session.exec(
+        select(Subscription).where(Subscription.user_id == CURRENT_USER_ID).order_by(Subscription.id)
+    ).all()]
+    visible = [item for item in visible if item.status != "ended"]
     subscriptions = [item for item in outputs if item.status != "ended"]
-    active = [item for item in subscriptions if item.status == "active"]
+    if sort == "next_charge_date":
+        with_date = [item for item in subscriptions if item.next_charge_date is not None]
+        without_date = [item for item in subscriptions if item.next_charge_date is None]
+        with_date.sort(key=lambda item: item.id)
+        with_date.sort(key=lambda item: item.next_charge_date, reverse=order == "desc")
+        subscriptions = with_date + without_date
+    active = [item for item in visible if item.status == "active"]
     monthly_total = sum(
         (
             item.price
@@ -367,7 +413,7 @@ def list_subscriptions(session: Session, today: date) -> SubscriptionList:
         subscriptions=subscriptions,
         monthly_total=monthly_total,
         currency=user.currency if user else "CHF",
-        cancelled_excluded=sum(item.status == "cancelled" for item in subscriptions),
+        cancelled_excluded=sum(item.status == "cancelled" for item in visible),
     )
 
 
@@ -377,6 +423,7 @@ def edit_subscription(session: Session, subscription_id: int, payload: Subscript
     if subscription.cancelled_at is not None:
         raise PayallError("subscription_cancelled", "id", status=409)
     updates = payload.model_dump(exclude_unset=True)
+    client_fields = set(updates)
     if "price" in updates and (updates["price"] is None or updates["price"] <= 0):
         raise PayallError("price_must_be_positive", "price")
     if "service" in updates:
@@ -396,7 +443,7 @@ def edit_subscription(session: Session, subscription_id: int, payload: Subscript
         updates["auto_pay_since"] = today if updates["auto_pay"] else None
     try:
         for field, value in updates.items():
-            if value is None:
+            if field in client_fields and value is None:
                 raise PayallError("invalid_input", field)
             setattr(subscription, field, value)
         session.add(subscription)

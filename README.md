@@ -242,7 +242,7 @@ outside this milestone.
 | User goal | Method | Path | Example JSON / parameters | Success status and response | Meaningful failure | Open question |
 |---|---|---|---|---|---|---|
 | Log in | `POST` | `/login` | `{ "email": "lena.mueller@example.com", "password": "example-password" }` | `200 OK` — `{ "access_token": "<token>", "user": { "id": 1, "email": "lena.mueller@example.com" } }` | `401 Unauthorized` — `{ "error": "invalid_credentials" }` | How long should the bearer token remain valid, and do we need logout or refresh-token operations? |
-| See, search and sort subscriptions | `GET` | `/subscriptions?search=netflix&sort=next_charge_date&order=asc` | No request body. Supported parameters: `search`, `sort` (`next_charge_date`, `price`, `service`) and `order` (`asc`, `desc`). | `200 OK` — `{ "subscriptions": [ ... ], "monthly_total": 49.68, "currency": "CHF", "cancelled_excluded": 0 }` | `400 Bad Request` — `{ "error": "invalid_sort_field" }` | Should search be case-insensitive, and do we need pagination when the list grows? |
+| See, search and sort subscriptions | `GET` | `/subscriptions?search=netflix&sort=next_charge_date&order=asc` | Optional parameters: `search` (case-insensitive substring of service or category), `sort` (`next_charge_date`, `price`, `service`) and `order` (`asc`, `desc`). | `200 OK` — `{ "subscriptions": [ ... ], "monthly_total": 49.68, "currency": "CHF", "cancelled_excluded": 0 }` | `422 Unprocessable Entity` — `{ "error": "invalid_input", "field": "sort" }` | Search is case-insensitive and matches the service or category name. No pagination: a personal subscription list stays short. The monthly total always includes all active subscriptions. |
 | Add a listed subscription | `POST` | `/subscriptions` | `{ "service": "Netflix", "is_custom": false, "category_id": 1, "price": 18.90, "currency": "CHF", "billing_period": "monthly", "start_date": "2025-09-12", "auto_pay": true, "notification_enabled": true }` | `201 Created` — new subscription object with its `id`, `next_charge_date` and calculated `payment_status` | `422 Unprocessable Entity` — `{ "error": "price_must_be_positive", "field": "price" }` or `{ "error": "category_not_found", "field": "category_id" }` | Which additional currencies should be supported later? |
 | Add a custom subscription | `POST` | `/subscriptions` | `{ "service": "Local Gym", "is_custom": true, "category_id": 4, "price": 45.00, "currency": "CHF", "billing_period": "monthly", "start_date": "2025-09-12", "auto_pay": false, "notification_enabled": false }` | `201 Created` — new subscription object with `is_custom: true` and calculated `payment_status` | `422 Unprocessable Entity` — `{ "error": "service_name_required", "field": "service" }` or `{ "error": "category_not_found", "field": "category_id" }` | Categories come from the fixed category list. |
 | Read one subscription | `GET` | `/subscriptions/{id}` | No request body. Example path: `/subscriptions/1` | `200 OK` — subscription object | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` | – |
@@ -278,6 +278,8 @@ In code, we use the ORM **SQLModel** (built on SQLAlchemy), following the
 - **Rules enforced in more than one place:** the API checks the business rules first
   (positive price, allowed billing periods, `paid`/`pending`), and database constraints
   such as `CHECK (price > 0)` protect the data as a second layer.
+  Search and sorting by price or service run as database queries, while
+  `next_charge_date` is calculated and sorted in Python.
 - **Safe changes:** each create, update or delete runs in a transaction, so a failed
   request does not leave half-saved data.
 
@@ -335,7 +337,7 @@ We looked at normal subscription tracker apps. We like the simple dashboard with
 | Milestone | Available evidence | Status / next step |
 |---|---|---|
 | 1 – Design draft | Analysis, workflow, sketches, example JSON and proposed operations | Draft done, open questions listed above |
-| 2 – Contract and available implementation | OpenAPI contract, subscriptions, payments, settings, notifications and history endpoints; pytest passes | Implemented and tested |
+| 2 – Contract and available implementation | OpenAPI contract, subscriptions, payments, settings, notifications, history, search and sort endpoints; pytest passes | Implemented and tested |
 | Integration – later | Revised feature scope, frontend decision, architecture and a connected workflow | Update later |
 
 ## 4. References and acknowledgements
