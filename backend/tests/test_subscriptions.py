@@ -43,6 +43,18 @@ def test_get_seeded_subscriptions(tmp_path):
     assert data["subscriptions"][0]["category"] == "Entertainment"
 
 
+def test_openapi_documents_custom_validation_errors(tmp_path):
+    with client_for(tmp_path) as client:
+        openapi = client.get("/openapi.json").json()
+        response = client.get("/subscriptions/abc")
+
+    assert "HTTPValidationError" not in str(openapi)
+    assert "ValidationError" not in str(openapi)
+    assert response.status_code == 422
+    assert response.json()["error"] == "invalid_input"
+    assert response.json()["field"] == "subscription_id"
+
+
 def test_list_calculates_next_charge_dates(tmp_path):
     engine = make_engine(tmp_path / "payall.sqlite")
     initialise(engine)
