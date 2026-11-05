@@ -11,6 +11,7 @@ from sqlmodel import Session
 
 from database import initialise, make_engine
 from models import (
+    Category,
     Error,
     SubscriptionInput,
     SubscriptionList,
@@ -23,6 +24,8 @@ from service import (
     delete_subscription,
     edit_subscription,
     list_subscriptions,
+    list_categories,
+    read_subscription,
 )
 
 
@@ -79,6 +82,27 @@ def create_app(database_file: Path, *, echo: bool = False) -> FastAPI:
     )
     def get_subscriptions(session: DatabaseSession):
         return list_subscriptions(session, date.today())
+
+    @app.get(
+        "/subscriptions/{subscription_id}",
+        response_model=SubscriptionOutput,
+        tags=["Subscriptions"],
+        operation_id="readSubscription",
+        summary="Read a subscription",
+        responses={404: {"model": Error, "description": "Subscription not found"}},
+    )
+    def get_subscription(subscription_id: int, session: DatabaseSession):
+        return read_subscription(session, subscription_id, date.today())
+
+    @app.get(
+        "/categories",
+        response_model=list[Category],
+        tags=["Categories"],
+        operation_id="listCategories",
+        summary="List categories",
+    )
+    def get_categories(session: DatabaseSession):
+        return list_categories(session)
 
     @app.post(
         "/subscriptions",

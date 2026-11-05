@@ -1,11 +1,12 @@
 import json
 from datetime import date, datetime
+from decimal import Decimal
 from pathlib import Path
 
 from sqlalchemy import event, inspect
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, SQLModel, create_engine, select
 
-from models import Subscription, User
+from models import Category, Subscription, User
 
 
 def make_engine(database_file: Path, *, echo: bool = False):
@@ -37,8 +38,24 @@ def initialise(engine):
         user_data["created_at"] = datetime.fromisoformat(user_data["created_at"].replace("Z", "+00:00"))
         session.add(User(**user_data))
         session.flush()
+        category_names = [
+            "Entertainment",
+            "Music",
+            "Transport",
+            "Health & Fitness",
+            "Software & Cloud",
+            "News & Media",
+            "Education",
+            "Utilities",
+            "Other",
+        ]
+        session.add_all([Category(name=name) for name in category_names])
+        session.flush()
+        categories = {category.name: category.id for category in session.exec(select(Category)).all()}
         subscriptions = []
         for row in seed["subscriptions"]:
             row["start_date"] = date.fromisoformat(row["start_date"])
+            row["category_id"] = categories[row.pop("category")]
+            row["price_rappen"] = int(Decimal(str(row.pop("price"))) * 100)
             subscriptions.append(Subscription(**row))
         session.add_all(subscriptions)
