@@ -38,18 +38,7 @@ def initialise(engine):
         user_data["created_at"] = datetime.fromisoformat(user_data["created_at"].replace("Z", "+00:00"))
         session.add(User(**user_data))
         session.flush()
-        category_names = [
-            "Entertainment",
-            "Music",
-            "Transport",
-            "Health & Fitness",
-            "Software & Cloud",
-            "News & Media",
-            "Education",
-            "Utilities",
-            "Other",
-        ]
-        session.add_all([Category(name=name) for name in category_names])
+        session.add_all([Category(name=name) for name in seed["categories"]])
         session.flush()
         categories = {category.name: category.id for category in session.exec(select(Category)).all()}
         subscriptions = []

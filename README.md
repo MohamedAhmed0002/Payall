@@ -169,6 +169,7 @@ The examples below use `1`, `2`, and `3`, matching the implemented system.
     "billing_period": "monthly",
     "start_date": "2025-09-12",
     "next_charge_date": "2026-11-12",
+    "auto_pay": true,
     "payment_status": "paid",
     "notification_enabled": true
   },
@@ -184,6 +185,7 @@ The examples below use `1`, `2`, and `3`, matching the implemented system.
     "billing_period": "yearly",
     "start_date": "2026-02-01",
     "next_charge_date": "2027-02-01",
+    "auto_pay": false,
     "payment_status": "pending",
     "notification_enabled": true
   },
@@ -192,13 +194,14 @@ The examples below use `1`, `2`, and `3`, matching the implemented system.
     "user_id": 1,
     "service": "Spotify",
     "is_custom": false,
-    "category_id": 1,
-    "category": "Entertainment",
+    "category_id": 2,
+    "category": "Music",
     "price": 14.95,
     "currency": "CHF",
     "billing_period": "monthly",
     "start_date": "2025-10-03",
     "next_charge_date": "2026-11-03",
+    "auto_pay": true,
     "payment_status": "paid",
     "notification_enabled": false
   }
@@ -208,9 +211,9 @@ The examples below use `1`, `2`, and `3`, matching the implemented system.
 `price` is the amount charged for the selected `billing_period`; the API or app can
 normalise yearly and weekly prices to calculate the monthly dashboard total. `CHF` is
 the user's default currency and is the only supported currency for now; support for
-additional currencies can be added later. New subscriptions start with
-`payment_status` set to `pending`. Whether payment status is entered manually or
-supplied by a future payment integration remains open.
+additional currencies can be added later. Autopay is assumed to succeed on each charge date; it has no bank connection.
+Manual subscriptions can be marked paid through the payments endpoint. Payment status
+is calculated from recorded payments, with at most one payment per subscription period.
 
 Prices are stored internally as whole Rappen to avoid rounding errors, but the API
 always uses CHF amounts such as `18.90` (returned as the JSON number `18.9`).
@@ -220,9 +223,13 @@ implementation supports CHF only. Currency conversion is planned for a later sta
 ### Business rules and possible operations
 
 Rules: prices must be positive, `currency` is currently limited to `CHF`,
-`billing_period` must be `weekly`, `monthly` or `yearly`, dates must use `YYYY-MM-DD`,
-and `payment_status` must be `paid` or `pending`. New subscriptions start as
-`pending`. A custom subscription uses `POST /subscriptions` with `is_custom: true`.
+`billing_period` must be `weekly`, `monthly` or `yearly`, dates must use `YYYY-MM-DD`.
+Autopay records a successful payment on the charge date; manual subscriptions are
+paid through the payments endpoint. Payment status is calculated and there is one
+payment per period. Cancelling keeps a subscription until the end of its paid period;
+deleting removes the subscription and its payments. The monthly total excludes
+cancelled subscriptions. A custom subscription uses `POST /subscriptions` with
+`is_custom: true`.
 The API returns only the authenticated user's subscriptions. Search and sorting are
 handled by query parameters, and notification activation is updated through the same
 partial-update operation as other editable fields.
@@ -234,13 +241,15 @@ outside this milestone.
 | User goal | Method | Path | Example JSON / parameters | Success status and response | Meaningful failure | Open question |
 |---|---|---|---|---|---|---|
 | Log in | `POST` | `/login` | `{ "email": "lena.mueller@example.com", "password": "example-password" }` | `200 OK` — `{ "access_token": "<token>", "user": { "id": 1, "email": "lena.mueller@example.com" } }` | `401 Unauthorized` — `{ "error": "invalid_credentials" }` | How long should the bearer token remain valid, and do we need logout or refresh-token operations? |
-| See, search and sort subscriptions | `GET` | `/subscriptions?search=netflix&sort=next_charge_date&order=asc` | No request body. Supported parameters: `search`, `sort` (`next_charge_date`, `price`, `service`) and `order` (`asc`, `desc`). | `200 OK` — `{ "subscriptions": [ ... ], "monthly_total": 49.68, "currency": "CHF" }` | `400 Bad Request` — `{ "error": "invalid_sort_field" }` | Should search be case-insensitive, and do we need pagination when the list grows? |
-| Add a listed subscription | `POST` | `/subscriptions` | `{ "service": "Netflix", "is_custom": false, "category_id": 1, "price": 18.90, "currency": "CHF", "billing_period": "monthly", "start_date": "2025-09-12", "notification_enabled": true }` | `201 Created` — new subscription object with its `id`, `next_charge_date` and `payment_status` (`pending` for new subscriptions) | `422 Unprocessable Entity` — `{ "error": "price_must_be_positive", "field": "price" }` or `{ "error": "category_not_found", "field": "category_id" }` | Which additional currencies should be supported later? |
-| Add a custom subscription | `POST` | `/subscriptions` | `{ "service": "Local Gym", "is_custom": true, "category_id": 4, "price": 45.00, "currency": "CHF", "billing_period": "monthly", "start_date": "2025-09-12", "notification_enabled": false }` | `201 Created` — new subscription object with `is_custom: true` and `payment_status: "pending"` | `422 Unprocessable Entity` — `{ "error": "service_name_required", "field": "service" }` or `{ "error": "category_not_found", "field": "category_id" }` | Categories come from the fixed category list. |
-| Read one subscription | `GET` | `/subscriptions/{id}` | No request body. Example path: `/subscriptions/1` | `200 OK` — subscription object | `404 Not Found` — `{ "error": "subscription_not_found" }` | – |
+| See, search and sort subscriptions | `GET` | `/subscriptions?search=netflix&sort=next_charge_date&order=asc` | No request body. Supported parameters: `search`, `sort` (`next_charge_date`, `price`, `service`) and `order` (`asc`, `desc`). | `200 OK` — `{ "subscriptions": [ ... ], "monthly_total": 49.68, "currency": "CHF", "cancelled_excluded": 0 }` | `400 Bad Request` — `{ "error": "invalid_sort_field" }` | Should search be case-insensitive, and do we need pagination when the list grows? |
+| Add a listed subscription | `POST` | `/subscriptions` | `{ "service": "Netflix", "is_custom": false, "category_id": 1, "price": 18.90, "currency": "CHF", "billing_period": "monthly", "start_date": "2025-09-12", "auto_pay": true, "notification_enabled": true }` | `201 Created` — new subscription object with its `id`, `next_charge_date` and calculated `payment_status` | `422 Unprocessable Entity` — `{ "error": "price_must_be_positive", "field": "price" }` or `{ "error": "category_not_found", "field": "category_id" }` | Which additional currencies should be supported later? |
+| Add a custom subscription | `POST` | `/subscriptions` | `{ "service": "Local Gym", "is_custom": true, "category_id": 4, "price": 45.00, "currency": "CHF", "billing_period": "monthly", "start_date": "2025-09-12", "auto_pay": false, "notification_enabled": false }` | `201 Created` — new subscription object with `is_custom: true` and calculated `payment_status` | `422 Unprocessable Entity` — `{ "error": "service_name_required", "field": "service" }` or `{ "error": "category_not_found", "field": "category_id" }` | Categories come from the fixed category list. |
+| Read one subscription | `GET` | `/subscriptions/{id}` | No request body. Example path: `/subscriptions/1` | `200 OK` — subscription object | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` | – |
 | List categories | `GET` | `/categories` | No request body | `200 OK` — ordered list of `{ "id": 1, "name": "Entertainment" }` objects | – | The frontend uses this list for the category dropdown. |
-| Change a subscription or activate its notification | `PATCH` | `/subscriptions/{id}` | `{ "price": 19.90, "category_id": 5, "notification_enabled": true }` | `200 OK` — updated subscription object. `is_custom` cannot be changed; changing `billing_period` restarts the period from the next charge date. | `404 Not Found` — `{ "error": "subscription_not_found" }` | How many days before `next_charge_date` should a notification be sent, and should users choose that timing? |
-| Remove a subscription | `DELETE` | `/subscriptions/{id}` | No request body. Example path: `/subscriptions/1` | `204 No Content` | `404 Not Found` — `{ "error": "subscription_not_found" }` | Is deletion permanent, or should the API keep an inactive/history record for billing history? |
+| Change a subscription or activate its notification | `PATCH` | `/subscriptions/{id}` | `{ "price": 19.90, "category_id": 5, "notification_enabled": true }` | `200 OK` — updated subscription object. `is_custom` cannot be changed; changing `billing_period` restarts the period from the next charge date. | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` or `409 Conflict` — `{ "error": "subscription_cancelled", "field": "id" }` | How many days before `next_charge_date` should a notification be sent, and should users choose that timing? |
+| Mark a manual payment | `POST` | `/subscriptions/{id}/payments` | No request body | `201 Created` — payment object | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` or `409 Conflict` — `{ "error": "auto_pay_subscription", "field": "auto_pay" }` / `{ "error": "nothing_due", "field": "start_date" }` / `{ "error": "already_paid", "field": "id" }` | – |
+| Cancel a subscription | `POST` | `/subscriptions/{id}/cancel` | No request body | `200 OK` — cancelled subscription object | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` or `409 Conflict` — `{ "error": "already_cancelled", "field": "id" }` | – |
+| Remove a subscription | `DELETE` | `/subscriptions/{id}` | No request body. Example path: `/subscriptions/1` | `204 No Content` | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` | Is deletion permanent, or should the API keep an inactive/history record for billing history? |
 
 For the list operation, `monthly_total` is calculated by the API from each subscription's
 `price` and `billing_period`; for the three seeded subscriptions it is `49.68` CHF.
@@ -273,7 +282,8 @@ In code, we use the ORM **SQLModel** (built on SQLAlchemy), following the
 |---|---|---|
 | `user` | `id`, `name`, `email`, `currency`, `created_at` | One user has many subscriptions |
 | `category` | `id`, `name` | Fixed unique category list |
-| `subscription` | `id`, `user_id`, `service`, `is_custom`, `category_id`, `price_rappen`, `currency`, `billing_period`, `start_date`, `payment_status`, `notification_enabled` | `user_id` → `user.id`; `category_id` → `category.id` (foreign keys) |
+| `subscription` | `id`, `user_id`, `service`, `is_custom`, `category_id`, `price_rappen`, `currency`, `billing_period`, `start_date`, `auto_pay`, `cancelled_at`, `ends_on`, `notification_enabled` | `user_id` → `user.id`; `category_id` → `category.id` (foreign keys) |
+| `payment` | `id`, `subscription_id`, `period_start`, `amount_rappen`, `paid_on`, `method` | `subscription_id` → `subscription.id` |
 
 `next_charge_date` is not stored; the API calculates it from `start_date` and
 `billing_period` on every request, so it never goes out of date.
@@ -285,6 +295,9 @@ connection setting, not the models.
 All table IDs use SQLite `AUTOINCREMENT`, so deleted IDs are never reused. Money is
 stored as whole Rappen in `price_rappen`; API amounts remain CHF values with at most
 two decimal places.
+
+Known limitation: an automatic charge is recorded with the price at the time it is
+recorded, so a price change shortly before a charge may be reflected in that charge.
 
 ### Inspiration from existing apps or APIs (optional)
 

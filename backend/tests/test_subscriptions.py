@@ -14,7 +14,7 @@ from service import edit_subscription, list_subscriptions, next_charge_date
 
 
 def client_for(tmp_path):
-    return TestClient(create_app(tmp_path / "payall.sqlite"))
+    return TestClient(create_app(tmp_path / "payall.sqlite", today=lambda: date(2026, 11, 5)))
 
 
 def valid_payload(**overrides):
@@ -25,6 +25,7 @@ def valid_payload(**overrides):
         "currency": "CHF",
         "billing_period": "monthly",
         "start_date": "2026-01-15",
+        "auto_pay": False,
         "notification_enabled": True,
     }
     payload.update(overrides)
@@ -149,7 +150,7 @@ def test_edit_subscription_plan_change_starts_at_next_charge(tmp_path):
             currency="CHF",
             billing_period="monthly",
             start_date=date(2026, 1, 15),
-            payment_status="pending",
+            auto_pay=False,
             notification_enabled=False,
         )
         session.add(subscription)

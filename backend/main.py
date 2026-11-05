@@ -17,6 +17,7 @@ from models import (
     SubscriptionList,
     SubscriptionOutput,
     SubscriptionUpdate,
+    PaymentOutput,
 )
 from service import (
     PayallError,
@@ -25,11 +26,13 @@ from service import (
     edit_subscription,
     list_subscriptions,
     list_categories,
+    mark_subscription_paid,
+    cancel_subscription,
     read_subscription,
 )
 
 
-def create_app(database_file: Path, *, echo: bool = False) -> FastAPI:
+def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> FastAPI:
     engine = make_engine(database_file, echo=echo)
 
     @asynccontextmanager
@@ -81,7 +84,7 @@ def create_app(database_file: Path, *, echo: bool = False) -> FastAPI:
         summary="List subscriptions",
     )
     def get_subscriptions(session: DatabaseSession):
-        return list_subscriptions(session, date.today())
+        return list_subscriptions(session, today())
 
     @app.get(
         "/subscriptions/{subscription_id}",
@@ -92,7 +95,7 @@ def create_app(database_file: Path, *, echo: bool = False) -> FastAPI:
         responses={404: {"model": Error, "description": "Subscription not found"}},
     )
     def get_subscription(subscription_id: int, session: DatabaseSession):
-        return read_subscription(session, subscription_id, date.today())
+        return read_subscription(session, subscription_id, today())
 
     @app.get(
         "/categories",
@@ -126,7 +129,7 @@ def create_app(database_file: Path, *, echo: bool = False) -> FastAPI:
     def post_subscription(
         payload: SubscriptionInput, response: Response, session: DatabaseSession
     ):
-        result = create_subscription(session, payload, date.today())
+        result = create_subscription(session, payload, today())
         response.headers["Location"] = f"/subscriptions/{result.id}"
         return result
 
@@ -138,6 +141,7 @@ def create_app(database_file: Path, *, echo: bool = False) -> FastAPI:
         summary="Edit a subscription",
         responses={
             404: {"model": Error, "description": "Subscription not found"},
+            409: {"model": Error, "description": "Subscription is cancelled"},
             422: {"model": Error, "description": "Invalid input or business rule violated"},
         },
     )
@@ -146,7 +150,36 @@ def create_app(database_file: Path, *, echo: bool = False) -> FastAPI:
         payload: SubscriptionUpdate,
         session: DatabaseSession,
     ):
-        return edit_subscription(session, subscription_id, payload, date.today())
+        return edit_subscription(session, subscription_id, payload, today())
+
+    @app.post(
+        "/subscriptions/{subscription_id}/payments",
+        response_model=PaymentOutput,
+        status_code=201,
+        tags=["Payments"],
+        operation_id="createPayment",
+        summary="Mark a subscription as paid",
+        responses={
+            404: {"model": Error, "description": "Subscription not found"},
+            409: {"model": Error, "description": "Payment cannot be recorded"},
+        },
+    )
+    def post_payment(subscription_id: int, session: DatabaseSession):
+        return mark_subscription_paid(session, subscription_id, today())
+
+    @app.post(
+        "/subscriptions/{subscription_id}/cancel",
+        response_model=SubscriptionOutput,
+        tags=["Subscriptions"],
+        operation_id="cancelSubscription",
+        summary="Cancel a subscription",
+        responses={
+            404: {"model": Error, "description": "Subscription not found"},
+            409: {"model": Error, "description": "Subscription is already cancelled"},
+        },
+    )
+    def post_cancel(subscription_id: int, session: DatabaseSession):
+        return cancel_subscription(session, subscription_id, today())
 
     @app.delete(
         "/subscriptions/{subscription_id}",
@@ -157,7 +190,7 @@ def create_app(database_file: Path, *, echo: bool = False) -> FastAPI:
         responses={404: {"model": Error, "description": "Subscription not found"}},
     )
     def remove_subscription(subscription_id: int, session: DatabaseSession):
-        delete_subscription(session, subscription_id)
+        delete_subscription(session, subscription_id, today())
 
     return app
 

@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
-from sqlalchemy import CheckConstraint
+from sqlalchemy import CheckConstraint, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 
@@ -23,7 +23,6 @@ class Subscription(SQLModel, table=True):
     __table_args__ = (
         CheckConstraint("price_rappen > 0"),
         CheckConstraint("billing_period IN ('weekly', 'monthly', 'yearly')"),
-        CheckConstraint("payment_status IN ('paid', 'pending')"),
         {"sqlite_autoincrement": True},
     )
 
@@ -36,8 +35,27 @@ class Subscription(SQLModel, table=True):
     currency: str
     billing_period: str
     start_date: date
-    payment_status: str
+    auto_pay: bool
+    cancelled_at: date | None = None
+    ends_on: date | None = None
     notification_enabled: bool
+
+
+class Payment(SQLModel, table=True):
+    __tablename__ = "payment"
+    __table_args__ = (
+        CheckConstraint("amount_rappen > 0"),
+        CheckConstraint("method IN ('auto', 'manual')"),
+        UniqueConstraint("subscription_id", "period_start"),
+        {"sqlite_autoincrement": True},
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    subscription_id: int = Field(foreign_key="subscription.id", index=True)
+    period_start: date
+    amount_rappen: int
+    paid_on: date
+    method: str
 
 
 class Category(SQLModel, table=True):
@@ -58,6 +76,7 @@ class SubscriptionInput(BaseModel):
     currency: Literal["CHF"]
     billing_period: Literal["weekly", "monthly", "yearly"]
     start_date: date
+    auto_pay: bool
     notification_enabled: bool = False
 
     @field_validator("price")
@@ -81,6 +100,7 @@ class SubscriptionUpdate(BaseModel):
     currency: Literal["CHF"] | None = None
     billing_period: Literal["weekly", "monthly", "yearly"] | None = None
     start_date: date | None = None
+    auto_pay: bool | None = None
     notification_enabled: bool | None = None
 
     @field_validator("price")
@@ -95,8 +115,11 @@ class SubscriptionOutput(SubscriptionInput):
     id: int
     user_id: int
     category: str
-    next_charge_date: date
+    next_charge_date: date | None
     payment_status: Literal["paid", "pending"]
+    status: Literal["active", "cancelled", "ended"]
+    cancelled_at: date | None
+    ends_on: date | None
 
 
 class Error(BaseModel):
@@ -111,7 +134,22 @@ class SubscriptionList(BaseModel):
     subscriptions: list[SubscriptionOutput]
     monthly_total: Decimal
     currency: str
+    cancelled_excluded: int
 
     @field_serializer("monthly_total")
     def serialize_monthly_total(self, value: Decimal) -> float:
+        return float(value)
+
+
+class PaymentOutput(BaseModel):
+    id: int
+    subscription_id: int
+    service: str
+    period_start: date
+    amount: Decimal
+    paid_on: date
+    method: Literal["auto", "manual"]
+
+    @field_serializer("amount")
+    def serialize_amount(self, value: Decimal) -> float:
         return float(value)
