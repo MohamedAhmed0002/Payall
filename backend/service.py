@@ -117,7 +117,11 @@ def record_due_autopay_payments(session: Session, today: date) -> None:
             ).all()
         }
         for period_start in charge_dates(subscription, today):
-            if period_start not in existing:
+            if (
+                subscription.auto_pay_since is not None
+                and period_start >= subscription.auto_pay_since
+                and period_start not in existing
+            ):
                 session.add(
                     Payment(
                         subscription_id=subscription.id,
@@ -203,6 +207,7 @@ def create_subscription(session: Session, payload: SubscriptionInput, today: dat
         billing_period=payload.billing_period,
         start_date=payload.start_date,
         auto_pay=payload.auto_pay,
+        auto_pay_since=payload.start_date if payload.auto_pay else None,
         notification_enabled=payload.notification_enabled,
     )
     try:
@@ -387,6 +392,8 @@ def edit_subscription(session: Session, subscription_id: int, payload: Subscript
     if "billing_period" in updates and updates["billing_period"] != subscription.billing_period:
         if "start_date" not in updates:
             updates["start_date"] = next_charge_date(subscription.start_date, subscription.billing_period, today)
+    if "auto_pay" in updates and updates["auto_pay"] != subscription.auto_pay:
+        updates["auto_pay_since"] = today if updates["auto_pay"] else None
     try:
         for field, value in updates.items():
             if value is None:
@@ -404,9 +411,13 @@ def edit_subscription(session: Session, subscription_id: int, payload: Subscript
 def mark_subscription_paid(session: Session, subscription_id: int, today: date) -> PaymentOutput:
     record_due_autopay_payments(session, today)
     subscription = get_own_subscription(session, subscription_id)
-    if subscription.auto_pay:
-        raise PayallError("auto_pay_subscription", "auto_pay", status=409)
     period_start = _period_start(subscription, today)
+    if subscription.auto_pay and (
+        subscription.auto_pay_since is None
+        or period_start is None
+        or period_start >= subscription.auto_pay_since
+    ):
+        raise PayallError("auto_pay_subscription", "auto_pay", status=409)
     if period_start is None:
         raise PayallError("nothing_due", "start_date", status=409)
     if session.exec(
@@ -453,9 +464,13 @@ def cancel_subscription(session: Session, subscription_id: int, today: date) -> 
         else today
     )
     session.add(subscription)
-    session.commit()
-    session.refresh(subscription)
-    return _to_output(session, subscription, today)
+    try:
+        session.commit()
+        session.refresh(subscription)
+        return _to_output(session, subscription, today)
+    except Exception:
+        session.rollback()
+        raise
 
 
 def delete_subscription(session: Session, subscription_id: int, today: date) -> None:

@@ -40,6 +40,7 @@ class Subscription(SQLModel, table=True):
     billing_period: str
     start_date: date
     auto_pay: bool
+    auto_pay_since: date | None = None
     cancelled_at: date | None = None
     ends_on: date | None = None
     notification_enabled: bool

@@ -30,6 +30,7 @@
       "billing_period": "monthly",
       "start_date": "2025-09-12",
       "auto_pay": true,
+      "auto_pay_since": "2025-09-12",
       "notification_enabled": true
     },
     {
@@ -56,6 +57,7 @@
       "billing_period": "monthly",
       "start_date": "2025-10-03",
       "auto_pay": true,
+      "auto_pay_since": "2025-10-03",
       "notification_enabled": false
     }
   ]

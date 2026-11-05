@@ -226,7 +226,8 @@ Rules: prices must be positive, `currency` is currently limited to `CHF`,
 `billing_period` must be `weekly`, `monthly` or `yearly`, dates must use `YYYY-MM-DD`.
 Autopay records a successful payment on the charge date; manual subscriptions are
 paid through the payments endpoint. Payment status is calculated and there is one
-payment per period. Cancelling keeps a subscription until the end of its paid period;
+payment per period. Switching to autopay only covers charges from that day on; earlier
+periods can still be paid manually. Cancelling keeps a subscription until the end of its paid period;
 deleting removes the subscription and its payments. The monthly total excludes
 cancelled subscriptions. A custom subscription uses `POST /subscriptions` with
 `is_custom: true`.
@@ -249,7 +250,7 @@ outside this milestone.
 | Change a subscription or activate its notification | `PATCH` | `/subscriptions/{id}` | `{ "price": 19.90, "category_id": 5, "notification_enabled": true }` | `200 OK` — updated subscription object. `is_custom` cannot be changed; changing `billing_period` restarts the period from the next charge date. | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` or `409 Conflict` — `{ "error": "subscription_cancelled", "field": "id" }` | Reminder timing: default 7 days, changed in `/settings` |
 | Mark a manual payment | `POST` | `/subscriptions/{id}/payments` | No request body | `201 Created` — payment object | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` or `409 Conflict` — `{ "error": "auto_pay_subscription", "field": "auto_pay" }` / `{ "error": "nothing_due", "field": "start_date" }` / `{ "error": "already_paid", "field": "id" }` | – |
 | Cancel a subscription | `POST` | `/subscriptions/{id}/cancel` | No request body | `200 OK` — cancelled subscription object | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` or `409 Conflict` — `{ "error": "already_cancelled", "field": "id" }` | – |
-| Remove a subscription | `DELETE` | `/subscriptions/{id}` | No request body. Example path: `/subscriptions/1` | `204 No Content` | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` | Is deletion permanent, or should the API keep an inactive/history record for billing history? |
+| Remove a subscription | `DELETE` | `/subscriptions/{id}` | No request body. Example path: `/subscriptions/1` | `204 No Content` | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` | Deletion is permanent and also removes the subscription's payments; use cancel to keep the history. |
 | Read settings | `GET` | `/settings` | No request body | `200 OK` — `{ "reminder_days": 7, "currency": "CHF" }` | – | – |
 | Update reminder timing | `PATCH` | `/settings` | `{ "reminder_days": 3 }` | `200 OK` — updated settings | `422 Unprocessable Entity` — `{ "error": "invalid_input", "field": "reminder_days" }` | – |
 | List in-app notifications | `GET` | `/notifications` | No request body | `200 OK` — calculated renewal reminders and pending manual payments | – | – |
@@ -286,7 +287,7 @@ In code, we use the ORM **SQLModel** (built on SQLAlchemy), following the
 |---|---|---|
 | `user` | `id`, `name`, `email`, `currency`, `reminder_days`, `created_at` | One user has many subscriptions |
 | `category` | `id`, `name` | Fixed unique category list |
-| `subscription` | `id`, `user_id`, `service`, `is_custom`, `category_id`, `price_rappen`, `currency`, `billing_period`, `start_date`, `auto_pay`, `cancelled_at`, `ends_on`, `notification_enabled` | `user_id` → `user.id`; `category_id` → `category.id` (foreign keys) |
+| `subscription` | `id`, `user_id`, `service`, `is_custom`, `category_id`, `price_rappen`, `currency`, `billing_period`, `start_date`, `auto_pay`, `auto_pay_since`, `cancelled_at`, `ends_on`, `notification_enabled` | `user_id` → `user.id`; `category_id` → `category.id` (foreign keys) |
 | `payment` | `id`, `subscription_id`, `period_start`, `amount_rappen`, `paid_on`, `method` | `subscription_id` → `subscription.id` |
 
 `next_charge_date` is not stored; the API calculates it from `start_date` and

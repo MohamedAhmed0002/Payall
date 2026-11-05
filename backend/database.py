@@ -44,6 +44,8 @@ def initialise(engine):
         subscriptions = []
         for row in seed["subscriptions"]:
             row["start_date"] = date.fromisoformat(row["start_date"])
+            if row.get("auto_pay_since") is not None:
+                row["auto_pay_since"] = date.fromisoformat(row["auto_pay_since"])
             row["category_id"] = categories[row.pop("category")]
             row["price_rappen"] = int(Decimal(str(row.pop("price"))) * 100)
             subscriptions.append(Subscription(**row))
