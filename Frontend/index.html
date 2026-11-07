@@ -1,0 +1,2701 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PayAll | Swiss Subscription Intelligence</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Oswald & Antonio (Condensed Display), Plus Jakarta Sans (Classic Executive Business), Inter (Clean UI), JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Oswald:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            paper: '#FFFFFF',
+            alabaster: '#FAF9F5',
+            stone: '#F3F2EE',
+            obsidian: '#0B0B0B',
+            charcoal: '#18181B',
+            muted: '#686763',
+            hairline: '#E6E4DD',
+            gold: {
+              DEFAULT: '#C8A96E',
+              light: '#E2C992',
+              dark: '#9E7E43',
+              tint: 'rgba(200, 169, 110, 0.12)'
+            },
+            emerald: {
+              DEFAULT: '#0D9467',
+              tint: '#F0FDF4'
+            },
+            amber: {
+              DEFAULT: '#B45309',
+              tint: '#FFFBEB'
+            },
+            crimson: {
+              DEFAULT: '#DC2626',
+              tint: '#FEF2F2'
+            }
+          },
+          fontFamily: {
+            display: ['Oswald', 'Antonio', 'sans-serif'],
+            executive: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --bg-paper: #FFFFFF;
+      --text-obsidian: #0B0B0B;
+      --accent-gold: #C8A96E;
+      --border-hairline: #E6E4DD;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+
+    ::selection {
+      background-color: #C8A96E;
+      color: #FFFFFF;
+    }
+
+    body {
+      background-color: var(--bg-paper);
+      color: var(--text-obsidian);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      margin: 0;
+    }
+
+    /* Editorial Eyebrow Typography */
+    .eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--accent-gold);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .eyebrow-dark {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #686763;
+    }
+
+    /* Condensed Authority Display Typography */
+    .authority-headline {
+      font-family: 'Oswald', 'Antonio', sans-serif;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+      line-height: 0.94;
+    }
+
+    /* Classic Executive Business Subtitle Typography */
+    .executive-subtitle {
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      line-height: 1.25;
+    }
+
+    /* Left-to-Right Button Sweep with Champagne Gold Text Fill */
+    .sweep-gold-btn {
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+      font-family: 'Oswald', sans-serif;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      transition: color 0.4s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.4s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease;
+    }
+
+    .sweep-gold-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-color: #0B0B0B;
+      transform: scaleX(0);
+      transform-origin: left center;
+      transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: -1;
+    }
+
+    .sweep-gold-btn.btn-dark::before {
+      background-color: #1F1F22;
+    }
+
+    .sweep-gold-btn:hover {
+      color: #C8A96E !important;
+      border-color: #C8A96E;
+      transform: translateY(-2px);
+      box-shadow: 0 14px 28px -10px rgba(11, 11, 11, 0.22);
+    }
+
+    .sweep-gold-btn:hover::before {
+      transform: scaleX(1);
+    }
+
+    /* Top Hero Navigation Links: Clean Upward Bump & Gold Underline Only (No Square Box/Shadow) */
+    .hero-top-nav-link {
+      position: relative;
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.92);
+      padding: 0.5rem 0.25rem;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      transition: color 0.35s cubic-bezier(0.22, 1, 0.36, 1), transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .hero-top-nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: var(--accent-gold);
+      transform: scaleX(0);
+      transform-origin: left center;
+      transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .hero-top-nav-link:hover {
+      color: #C8A96E;
+      transform: translateY(-2px);
+    }
+
+    .hero-top-nav-link:hover::after {
+      transform: scaleX(1);
+    }
+
+    /* Staggered Cinematic Entrance Animation for Hero Typography on Page Load */
+    @keyframes heroEntranceUp {
+      0% {
+        opacity: 0;
+        transform: translateY(38px);
+        filter: blur(8px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0px);
+      }
+    }
+
+    .hero-enter-1 {
+      opacity: 0;
+      animation: heroEntranceUp 1.05s cubic-bezier(0.16, 1, 0.3, 1) 0.12s forwards;
+    }
+
+    .hero-enter-2 {
+      opacity: 0;
+      animation: heroEntranceUp 1.05s cubic-bezier(0.16, 1, 0.3, 1) 0.30s forwards;
+    }
+
+    .hero-enter-3 {
+      opacity: 0;
+      animation: heroEntranceUp 1.05s cubic-bezier(0.16, 1, 0.3, 1) 0.48s forwards;
+    }
+
+    /* Navigation Links with Left-to-Right Gold Underline Fill */
+    .nav-luxury-link {
+      position: relative;
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #27272A;
+      padding: 0.5rem 0.35rem;
+      transition: color 0.3s ease, transform 0.3s ease;
+    }
+
+    .nav-luxury-link:hover,
+    .nav-luxury-link.active {
+      color: #0B0B0B;
+      transform: translateY(-1px);
+    }
+
+    .nav-luxury-link::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 2.5px;
+      background-color: var(--accent-gold);
+      transform: scaleX(0);
+      transform-origin: left center;
+      transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .nav-luxury-link:hover::after,
+    .nav-luxury-link.active::after {
+      transform: scaleX(1);
+    }
+
+    /* More Translucent Luxury Glassmorphic White Shutter Navbar */
+    .glass-white-nav {
+      background: rgba(255, 255, 255, 0.58);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border-bottom: 1px solid rgba(11, 11, 11, 0.08);
+      transition: 
+        clip-path 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+        box-shadow 0.4s ease;
+    }
+
+    .shutter-hidden {
+      clip-path: inset(0 0 100% 0);
+      transform: translateY(-10px);
+      pointer-events: none;
+    }
+
+    .shutter-visible {
+      clip-path: inset(0 0 0% 0);
+      transform: translateY(0);
+      pointer-events: auto;
+      box-shadow: 0 12px 32px -12px rgba(11, 11, 11, 0.07);
+    }
+
+    /* 3 Summary Cards Kinetic Sweep & Hover Elevation */
+    .kinetic-summary-card {
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+      transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.4s ease;
+    }
+
+    .kinetic-summary-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(200, 169, 110, 0.10) 0%, rgba(250, 249, 245, 0.6) 100%);
+      transform: scaleX(0);
+      transform-origin: left center;
+      transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: -1;
+    }
+
+    .kinetic-summary-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, #C8A96E, #0B0B0B);
+      transform: scaleX(0);
+      transform-origin: left center;
+      transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .kinetic-summary-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 24px 48px -16px rgba(11, 11, 11, 0.09);
+      border-color: #C8A96E;
+    }
+
+    .kinetic-summary-card:hover::before,
+    .kinetic-summary-card:hover::after {
+      transform: scaleX(1);
+    }
+
+    .kinetic-number {
+      transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), color 0.4s ease;
+      display: inline-block;
+    }
+
+    .kinetic-summary-card:hover .kinetic-number {
+      transform: translateX(4px);
+      color: #9E7E43;
+    }
+
+    /* Enhanced Sticky Stacking Subscription Rows with Tactile Deck Elevation */
+    .sub-card-row {
+      position: sticky;
+      background-color: #FFFFFF;
+      border-top: 1px solid rgba(200, 169, 110, 0.28);
+      box-shadow: 0 -6px 20px rgba(11, 11, 11, 0.06), 0 10px 28px -6px rgba(11, 11, 11, 0.08);
+      overflow: visible;
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+    }
+
+    .sub-card-row::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(200, 169, 110, 0.11) 0%, rgba(250, 249, 245, 0.45) 100%);
+      transform: scaleX(0);
+      transform-origin: left center;
+      transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+      pointer-events: none;
+      border-radius: 0.75rem;
+      z-index: 0;
+    }
+
+    .sub-card-row:hover::before {
+      transform: scaleX(1);
+    }
+
+    .sub-card-row:hover {
+      transform: translateY(-3px) scale(1.003);
+      box-shadow: 0 -8px 24px rgba(11, 11, 11, 0.08), 0 18px 36px -10px rgba(11, 11, 11, 0.14);
+      border-color: #C8A96E;
+      z-index: 40 !important;
+    }
+
+    .sub-row-pending {
+      background: linear-gradient(90deg, rgba(254, 243, 199, 0.5) 0%, #FFFFFF 65%);
+      border-left: 3.5px solid #C8A96E;
+    }
+
+    .sub-row-paid {
+      border-left: 3.5px solid transparent;
+    }
+
+    /* Bespoke Architectural Status Tags (Replaces generic AI pills) */
+    .status-architectural {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+    }
+
+    .status-paid {
+      background-color: #F4F9F6;
+      color: #0B5D41;
+      border: 1px solid #C6E4D6;
+    }
+
+    .status-pending {
+      background-color: #FDF8EE;
+      color: #9A5B13;
+      border: 1px solid #EED6A7;
+    }
+
+    /* Full-Width Horizontal Marquee Bar */
+    .marquee-container {
+      overflow: hidden;
+      white-space: nowrap;
+      position: relative;
+      border-top: 1px solid var(--border-hairline);
+      border-bottom: 1px solid var(--border-hairline);
+      background: #FAF9F5;
+    }
+
+    .marquee-track {
+      display: inline-flex;
+      align-items: center;
+      animation: scrollMarquee 36s linear infinite;
+    }
+
+    .marquee-track:hover {
+      animation-play-state: paused;
+    }
+
+    @keyframes scrollMarquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* Scroll Reveal Animations */
+    .reveal-on-scroll {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal-on-scroll.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .story-reveal-left {
+      opacity: 0;
+      transform: translateX(-40px);
+      transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .story-reveal-right {
+      opacity: 0;
+      transform: translateY(45px);
+      transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.15s;
+    }
+
+    .story-reveal-left.is-visible,
+    .story-reveal-right.is-visible {
+      opacity: 1;
+      transform: translate(0, 0);
+    }
+
+    /* Slide-Over Drawer Backdrop */
+    .drawer-backdrop {
+      background: rgba(11, 11, 11, 0.45);
+      backdrop-filter: blur(6px);
+      transition: opacity 0.35s ease;
+    }
+  </style>
+</head>
+<body class="bg-paper text-obsidian antialiased">
+
+  <!-- =====================================================================
+       LUXURY GLASSMORPHIC NAVIGATION BAR
+       Unveils smoothly on scroll. Features: PAYALL (Two-tone, no dot), Dashboard, Settings, About Us, and Clean Search
+  ====================================================================== -->
+  <header id="main-navbar" class="glass-white-nav fixed top-0 left-0 right-0 z-40 shutter-hidden">
+    <div class="max-w-7xl mx-auto px-6 sm:px-10 h-20 flex items-center justify-between gap-6">
+      
+      <!-- Brand Name Strictly Two-Tone "PAYALL" Without Dot -->
+      <a href="#hero-section" onclick="scrollToHero(event)" class="flex items-center group">
+        <span class="font-display font-bold text-2xl sm:text-3xl tracking-[0.16em] uppercase transition-transform duration-300 group-hover:scale-105">
+          <span class="text-obsidian">PAY</span><span class="text-gold">ALL</span>
+        </span>
+      </a>
+
+      <!-- 3 Prominent Navigation Links with Filling Gold Underline -->
+      <nav class="hidden md:flex items-center gap-10">
+        <button onclick="navigateSection('dashboard')" id="nav-btn-dashboard" class="nav-luxury-link active">
+          Dashboard
+        </button>
+        <button onclick="navigateSection('settings')" id="nav-btn-settings" class="nav-luxury-link">
+          Settings
+        </button>
+        <button onclick="navigateSection('about')" id="nav-btn-about" class="nav-luxury-link">
+          About Us
+        </button>
+      </nav>
+
+      <!-- Right Controls: Clean Classic Search Input (No K symbol) -->
+      <div class="flex items-center gap-3.5">
+        <div class="relative hidden sm:block">
+          <svg class="w-3.5 h-3.5 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input 
+            id="navbar-search-input"
+            type="text"
+            oninput="syncGlobalSearch(this.value)"
+            placeholder="Search subscriptions..."
+            class="w-48 lg:w-60 pl-9 pr-4 py-2 rounded-lg bg-alabaster border border-hairline text-xs text-obsidian placeholder-muted focus:outline-none focus:border-gold focus:bg-white transition"
+          />
+        </div>
+
+        <!-- Hidden Notification Elements for JS Compatibility -->
+        <div class="hidden">
+          <span id="nav-notif-badge">2</span>
+          <div id="notif-popover">
+            <span id="notif-window-label">7d window</span>
+            <div id="notif-popover-body"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Navigation Bar -->
+    <div class="flex md:hidden border-t border-hairline px-4 py-2.5 justify-around bg-white">
+      <button onclick="navigateSection('dashboard')" class="text-xs font-display uppercase tracking-widest text-obsidian font-bold">Dashboard</button>
+      <button onclick="navigateSection('settings')" class="text-xs font-display uppercase tracking-widest text-muted">Settings</button>
+      <button onclick="navigateSection('about')" class="text-xs font-display uppercase tracking-widest text-muted">About Us</button>
+    </div>
+  </header>
+
+
+  <!-- =====================================================================
+       SECTION 00: STICKY FULL-VIEWPORT PARALLAX HERO
+       Uses your chosen bright gradient and dusk river cityscape photo.
+       Recedes gently with camera blur and scale-down as the workspace glides over it.
+  ====================================================================== -->
+  <section id="hero-section" class="sticky top-0 z-10 h-screen min-h-[700px] flex flex-col justify-between bg-obsidian overflow-hidden select-none will-change-transform">
+    
+    <!-- User's Selected Dusk Cityscape with Parallax Movement -->
+    <div 
+      id="hero-parallax-bg"
+      class="absolute inset-0 z-0 bg-cover bg-center will-change-transform"
+      style="background-image: url('https://images.unsplash.com/photo-1780324461060-51a09a8b65d7?q=80&w=1333&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D'); transform: scale(1.06);"
+    ></div>
+
+    <!-- Exact Bright Hero Gradient Requested by User -->
+    <div class="absolute inset-0 z-10 bg-gradient-to-r from-obsidian/50 via-obsidian/25 to-obsidian/0"></div>
+    <div class="absolute inset-0 z-10 bg-gradient-to-t from-obsidian/80 via-transparent to-obsidian/20"></div>
+
+    <!-- Top Bar Inside Hero: Clean Left Side, Right-Aligned Navigation Only -->
+    <div class="relative z-20 max-w-7xl w-full mx-auto px-6 sm:px-10 pt-10 flex items-center justify-end">
+      <div class="hidden sm:flex items-center gap-8">
+        <button onclick="navigateSection('dashboard')" class="hero-top-nav-link">Dashboard</button>
+        <button onclick="navigateSection('settings')" class="hero-top-nav-link">Settings</button>
+        <button onclick="navigateSection('about')" class="hero-top-nav-link">About Us</button>
+      </div>
+    </div>
+
+    <!-- Main Left-Aligned Hero Content (Staggered Entrance Motion on Load) -->
+    <div id="hero-content-col" class="relative z-20 max-w-7xl w-full mx-auto px-6 sm:px-10 my-auto will-change-transform">
+      <div class="max-w-3xl space-y-6">
+        
+        <!-- Massive Two-Tone App Name "PAYALL" (PAY = White, ALL = Gold, No Dot) -->
+        <h1 class="hero-enter-1 authority-headline text-[5.5rem] sm:text-[8.5rem] lg:text-[10.5rem] tracking-tight leading-[0.88] drop-shadow-2xl">
+          <span class="text-white">PAY</span><span class="text-gold">ALL</span>
+        </h1>
+
+        <!-- Classic Executive Business Subtitle -->
+        <h2 class="hero-enter-2 executive-subtitle text-2xl sm:text-4xl lg:text-[2.65rem] text-white tracking-tight drop-shadow-md">
+          Every subscription. <span class="text-gold-light">One place.</span>
+        </h2>
+
+        <!-- Clean 2-Line App Explanation -->
+        <p class="hero-enter-3 font-executive text-base sm:text-lg text-white/95 font-medium leading-relaxed max-w-xl pt-1 drop-shadow">
+          See all your subscriptions in one private place. Know your monthly total, your next charge and what needs paying.
+        </p>
+
+      </div>
+    </div>
+
+    <!-- Bottom Scroll Indicator -->
+    <div class="relative z-20 max-w-7xl w-full mx-auto px-6 sm:px-10 pb-10 flex items-center justify-between border-t border-white/20 pt-6">
+      <div class="flex items-center gap-6 text-xs font-mono text-white/85">
+        <span>MONTHLY LEDGER: <strong class="text-white" id="hero-stat-monthly">212.48 CHF</strong></span>
+        <span class="hidden sm:inline">.</span>
+        <span class="hidden sm:inline">ACTIVE: <strong class="text-white" id="hero-stat-count">07 SERVICES</strong></span>
+        <span class="hidden sm:inline">.</span>
+        <span class="hidden sm:inline text-gold-light font-semibold" id="hero-stat-pending">02 PENDING</span>
+      </div>
+
+      <div class="flex items-center gap-2.5 text-xs font-mono uppercase tracking-[0.2em] text-white/90">
+        <span>Scroll to Workspace</span>
+        <span class="inline-block animate-bounce text-gold">↓</span>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================================
+       MAIN APPLICATION WORKSPACE (Glides smoothly over the sticky blurred Hero)
+  ====================================================================== -->
+  <div class="relative z-20 bg-paper shadow-[0_-25px_60px_rgba(11,11,11,0.28)] border-t border-hairline">
+  <main id="workspace-anchor" class="max-w-7xl mx-auto px-6 sm:px-10 pt-24 pb-20">
+
+    <!-- ===================================================================
+         VIEW 01 // DASHBOARD (Current Subscriptions)
+    ==================================================================== -->
+    <section id="view-dashboard" class="space-y-12">
+      
+      <!-- Workspace Header + Matching Alabaster Sweep Buttons (Edit & + Add) -->
+      <div class="reveal-on-scroll flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-hairline pb-8">
+        <div>
+          <div class="eyebrow mb-2">
+            01 // WORKSPACE . SUBSCRIPTIONS
+          </div>
+          <h2 class="authority-headline text-4xl sm:text-6xl text-obsidian">
+            CURRENT SUBSCRIPTIONS
+          </h2>
+          <p class="text-xs sm:text-sm font-mono text-muted mt-2">
+            Today . 17 Oct 2025 (demo) . subscription tracking only
+          </p>
+        </div>
+
+        <!-- Both Action Buttons Styled Identically in Light Alabaster with Obsidian/Gold Sweep -->
+        <div class="flex flex-wrap items-center gap-3.5">
+          <button 
+            onclick="openEditFirstSubscription()" 
+            class="magnetic-el sweep-gold-btn px-6 py-3.5 rounded-lg bg-alabaster text-obsidian border border-hairline text-sm font-semibold shadow-sm"
+          >
+            Edit Subscriptions
+          </button>
+
+          <button 
+            onclick="openAddModal('listed')" 
+            class="magnetic-el sweep-gold-btn px-7 py-3.5 rounded-lg bg-alabaster text-obsidian border border-hairline text-sm font-semibold shadow-sm"
+          >
+            + Add Subscription
+          </button>
+        </div>
+      </div>
+
+
+      <!-- =================================================================
+           3 SUMMARY CARDS (With Kinetic Typography & Gold Sweep Motion)
+           Formula for Card 2: monthly * 12 + yearly + weekly * 52
+      ================================================================== -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Card 1: Monthly Total -->
+        <div class="reveal-on-scroll kinetic-summary-card rounded-2xl p-7 bg-alabaster border border-hairline">
+          <div class="flex items-center justify-between mb-4">
+            <span class="eyebrow text-[10px]">01 // MONTHLY TOTAL</span>
+            <div class="w-9 h-9 rounded-lg bg-white border border-hairline flex items-center justify-center text-obsidian shadow-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="font-mono text-3xl sm:text-4xl font-bold text-obsidian tracking-tight kinetic-number" id="card-monthly-total">
+            212.48 CHF
+          </div>
+          <p class="text-xs font-mono text-muted mt-2" id="card-monthly-subtext">
+            6 monthly + 1 yearly . normalized
+          </p>
+        </div>
+
+        <!-- Card 2: Annualized Total (Exact formula: monthly * 12 + yearly + weekly * 52) -->
+        <div class="reveal-on-scroll kinetic-summary-card rounded-2xl p-7 bg-paper border border-hairline" style="transition-delay: 80ms;">
+          <div class="flex items-center justify-between mb-4">
+            <span class="eyebrow-dark text-[10px]">02 // ANNUALIZED TOTAL</span>
+            <div class="w-9 h-9 rounded-lg bg-alabaster border border-hairline flex items-center justify-center text-obsidian">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="font-mono text-3xl sm:text-4xl font-bold text-obsidian tracking-tight kinetic-number" id="card-annual-total">
+            2'549.80 CHF
+          </div>
+          <p class="text-xs font-mono text-muted mt-2" id="card-annual-subtext">
+            monthly ×12 + yearly + weekly ×52
+          </p>
+        </div>
+
+        <!-- Card 3: Next Charge -->
+        <div class="reveal-on-scroll kinetic-summary-card rounded-2xl p-7 bg-paper border border-hairline" style="transition-delay: 160ms;">
+          <div class="flex items-center justify-between mb-4">
+            <span class="eyebrow-dark text-[10px]">03 // NEXT CHARGE</span>
+            <div class="w-9 h-9 rounded-lg bg-alabaster border border-hairline flex items-center justify-center text-obsidian">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="font-mono text-3xl sm:text-4xl font-bold text-obsidian tracking-tight kinetic-number" id="card-next-price">
+            14.95 CHF
+          </div>
+          <p class="text-xs font-mono text-muted mt-2" id="card-next-subtext">
+            Spotify . 13 Nov 2025
+          </p>
+        </div>
+
+      </div>
+
+
+      <!-- =================================================================
+           FULL-WIDTH HORIZONTAL ECOSYSTEM MARQUEE BAR
+           Positioned cleanly between the 3 Summary Cards and All Subscriptions
+      ================================================================== -->
+      <div class="marquee-container py-4 rounded-xl select-none">
+        <div class="marquee-track space-x-16 px-8">
+          <!-- Set 1: Authentic Brand Vector Symbols & Wordmarks -->
+          <span class="flex items-center gap-3 text-obsidian/85 font-display font-bold tracking-[0.18em] text-sm">
+            <span class="w-7 h-7 rounded-md bg-[#EB0000] text-white flex items-center justify-center shadow-sm">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4M12 6v12"/>
+              </svg>
+            </span>
+            SBB CFF FFS
+          </span>
+
+          <span class="flex items-center gap-3 text-[#E50914] font-display font-bold tracking-[0.22em] text-base">
+            <span class="w-7 h-7 rounded-md bg-[#141414] flex items-center justify-center shadow-sm">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <rect x="4" y="2" width="4.2" height="20" fill="#B1060F"/>
+                <rect x="15.8" y="2" width="4.2" height="20" fill="#B1060F"/>
+                <polygon points="4,2 8.2,2 20,22 15.8,22" fill="#E50914"/>
+              </svg>
+            </span>
+            NETFLIX
+          </span>
+
+          <span class="flex items-center gap-3 text-[#1DB954] font-sans font-bold tracking-wider text-sm">
+            <span class="w-7 h-7 rounded-md bg-[#1DB954] text-white flex items-center justify-center shadow-sm">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.59 14.42c-.18.3-.56.39-.86.21-2.35-1.43-5.31-1.76-8.8-.96-.33.08-.67-.13-.75-.47-.08-.33.13-.67.47-.75 3.82-.87 7.09-.5 9.73 1.11.3.18.39.56.21.86zm1.22-2.72c-.23.37-.71.49-1.08.26-2.69-1.65-6.79-2.13-9.97-1.16-.41.12-.85-.11-.97-.52-.12-.41.11-.85.52-.97 3.63-1.1 8.15-.57 11.24 1.33.37.23.49.71.26 1.06zm.11-2.83c-3.22-1.91-8.54-2.09-11.62-1.15-.49.15-1.01-.13-1.16-.62-.15-.49.13-1.01.62-1.16 3.54-1.07 9.41-.86 13.11 1.33.44.26.59.83.33 1.27-.26.44-.83.59-1.28.33z"/>
+              </svg>
+            </span>
+            SPOTIFY
+          </span>
+
+          <span class="flex items-center gap-3 text-obsidian/85 font-display font-bold tracking-[0.16em] text-sm">
+            <span class="w-7 h-7 rounded-md bg-[#D91E18] text-white flex items-center justify-center shadow-sm">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                <path d="M7 5v8a5 5 0 0010 0V5"/>
+              </svg>
+            </span>
+            TNW U-ABO
+          </span>
+
+          <span class="flex items-center gap-3 text-[#071849] font-sans font-extrabold tracking-widest text-sm">
+            <span class="w-7 h-7 rounded-md bg-[#071849] text-white flex items-center justify-center shadow-sm">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <path d="M4 17C6.5 9 15.5 7 20 14" stroke="#38BDF8" stroke-width="2" stroke-linecap="round"/>
+                <path d="M17 6v6M14 9h6" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            DISNEY+
+          </span>
+
+          <span class="flex items-center gap-3 text-[#131921] font-sans font-bold tracking-wide text-sm">
+            <span class="w-7 h-7 rounded-md bg-[#131921] text-white flex items-center justify-center shadow-sm">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <path d="M4 14.5c4.5 3.5 11.5 3.5 16 0" stroke="#FF9900" stroke-width="2.3" stroke-linecap="round"/>
+                <path d="M17.5 12.5l2.8 2-2.2 2.4" stroke="#FF9900" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            AMAZON PRIME
+          </span>
+
+          <span class="flex items-center gap-3 text-obsidian/85 font-display font-bold tracking-[0.2em] text-sm">
+            <span class="w-7 h-7 rounded-md bg-obsidian text-gold flex items-center justify-center shadow-sm">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                <path d="M6.5 6.5L17.5 17.5M3 10l7-7M14 21l7-7M2 6l4-4M18 22l4-4"/>
+              </svg>
+            </span>
+            PUREGYM SWISS
+          </span>
+
+          <!-- Set 2 (Seamless Loop) -->
+          <span class="flex items-center gap-3 text-obsidian/85 font-display font-bold tracking-[0.18em] text-sm">
+            <span class="w-7 h-7 rounded-md bg-[#EB0000] text-white flex items-center justify-center shadow-sm">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4M12 6v12"/>
+              </svg>
+            </span>
+            SBB CFF FFS
+          </span>
+
+          <span class="flex items-center gap-3 text-[#E50914] font-display font-bold tracking-[0.22em] text-base">
+            <span class="w-7 h-7 rounded-md bg-[#141414] flex items-center justify-center shadow-sm">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <rect x="4" y="2" width="4.2" height="20" fill="#B1060F"/>
+                <rect x="15.8" y="2" width="4.2" height="20" fill="#B1060F"/>
+                <polygon points="4,2 8.2,2 20,22 15.8,22" fill="#E50914"/>
+              </svg>
+            </span>
+            NETFLIX
+          </span>
+
+          <span class="flex items-center gap-3 text-[#1DB954] font-sans font-bold tracking-wider text-sm">
+            <span class="w-7 h-7 rounded-md bg-[#1DB954] text-white flex items-center justify-center shadow-sm">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.59 14.42c-.18.3-.56.39-.86.21-2.35-1.43-5.31-1.76-8.8-.96-.33.08-.67-.13-.75-.47-.08-.33.13-.67.47-.75 3.82-.87 7.09-.5 9.73 1.11.3.18.39.56.21.86zm1.22-2.72c-.23.37-.71.49-1.08.26-2.69-1.65-6.79-2.13-9.97-1.16-.41.12-.85-.11-.97-.52-.12-.41.11-.85.52-.97 3.63-1.1 8.15-.57 11.24 1.33.37.23.49.71.26 1.06zm.11-2.83c-3.22-1.91-8.54-2.09-11.62-1.15-.49.15-1.01-.13-1.16-.62-.15-.49.13-1.01.62-1.16 3.54-1.07 9.41-.86 13.11 1.33.44.26.59.83.33 1.27-.26.44-.83.59-1.28.33z"/>
+              </svg>
+            </span>
+            SPOTIFY
+          </span>
+
+          <span class="flex items-center gap-3 text-obsidian/85 font-display font-bold tracking-[0.16em] text-sm">
+            <span class="w-7 h-7 rounded-md bg-[#D91E18] text-white flex items-center justify-center shadow-sm">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                <path d="M7 5v8a5 5 0 0010 0V5"/>
+              </svg>
+            </span>
+            TNW U-ABO
+          </span>
+
+          <span class="flex items-center gap-3 text-[#071849] font-sans font-extrabold tracking-widest text-sm">
+            <span class="w-7 h-7 rounded-md bg-[#071849] text-white flex items-center justify-center shadow-sm">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <path d="M4 17C6.5 9 15.5 7 20 14" stroke="#38BDF8" stroke-width="2" stroke-linecap="round"/>
+                <path d="M17 6v6M14 9h6" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            DISNEY+
+          </span>
+
+          <span class="flex items-center gap-3 text-[#131921] font-sans font-bold tracking-wide text-sm">
+            <span class="w-7 h-7 rounded-md bg-[#131921] text-white flex items-center justify-center shadow-sm">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <path d="M4 14.5c4.5 3.5 11.5 3.5 16 0" stroke="#FF9900" stroke-width="2.3" stroke-linecap="round"/>
+                <path d="M17.5 12.5l2.8 2-2.2 2.4" stroke="#FF9900" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            AMAZON PRIME
+          </span>
+
+          <span class="flex items-center gap-3 text-obsidian/85 font-display font-bold tracking-[0.2em] text-sm">
+            <span class="w-7 h-7 rounded-md bg-obsidian text-gold flex items-center justify-center shadow-sm">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                <path d="M6.5 6.5L17.5 17.5M3 10l7-7M14 21l7-7M2 6l4-4M18 22l4-4"/>
+              </svg>
+            </span>
+            PUREGYM SWISS
+          </span>
+        </div>
+      </div>
+
+
+      <!-- =================================================================
+           FULL-WIDTH "ALL SUBSCRIPTIONS" BOARD
+           100% Full Container Width, Clean Aligned Search & Sort, Sticky Card Stacking
+      ================================================================== -->
+      <div class="w-full rounded-2xl bg-white border border-hairline shadow-xl p-6 sm:p-8 space-y-6">
+        
+        <!-- Header Bar: Title + Active Pill on Left | Clean Classic Search + Sort on Right -->
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-hairline">
+          <div class="flex items-center gap-3.5">
+            <h3 class="font-display text-2xl sm:text-3xl font-bold uppercase tracking-wide text-obsidian">
+              ALL SUBSCRIPTIONS
+            </h3>
+            <span id="active-count-pill" class="px-3 py-1 rounded-md text-xs font-mono font-semibold bg-alabaster text-obsidian border border-hairline">
+              7 active
+            </span>
+          </div>
+
+          <!-- Properly Contained Search Input & Sort Select (Never overflows border) -->
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+            <div class="relative flex-1 sm:w-64">
+              <svg class="w-3.5 h-3.5 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+              <input 
+                id="dashboard-search" 
+                type="text" 
+                oninput="handleSearchAndSort()"
+                placeholder="Search service or category..." 
+                class="w-full pl-9 pr-4 py-2.5 rounded-lg bg-alabaster border border-hairline text-xs text-obsidian placeholder-muted focus:outline-none focus:border-gold focus:bg-white transition"
+              />
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span class="eyebrow-dark text-[10px] shrink-0">SORT BY:</span>
+              <select 
+                id="dashboard-sort" 
+                onchange="handleSearchAndSort()"
+                class="w-full sm:w-auto px-3.5 py-2.5 rounded-lg bg-alabaster border border-hairline text-xs text-obsidian font-mono focus:outline-none focus:border-gold cursor-pointer"
+              >
+                <option value="default">Default Order</option>
+                <option value="next_charge_asc">Next Charge Date</option>
+                <option value="price_desc">Price: High to Low</option>
+                <option value="price_asc">Price: Low to High</option>
+                <option value="service_asc">Service Name (A-Z)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Pending Renewals Notice -->
+        <div id="attention-banner" class="rounded-xl px-5 py-3.5 bg-[#FDF8EE] border border-[#EED6A7] flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="w-2 h-2 rounded-full bg-[#B45309] animate-pulse"></span>
+            <p id="attention-banner-text" class="text-xs sm:text-sm font-medium text-[#7C3A0B]">
+              2 renewals need attention . Netflix and SBB Halbtax
+            </p>
+          </div>
+          <span class="font-mono text-[10px] uppercase tracking-widest text-[#9A5B13] font-semibold hidden sm:inline">
+            MANUAL CONFIRMATION REQUIRED
+          </span>
+        </div>
+
+        <!-- Column Headers -->
+        <div class="hidden md:grid md:grid-cols-12 px-6 py-3 rounded-lg bg-alabaster border border-hairline text-[11px] font-mono uppercase tracking-wider text-muted">
+          <div class="col-span-4">Service</div>
+          <div class="col-span-3">Current Billing Period</div>
+          <div class="col-span-2 text-right">Price</div>
+          <div class="col-span-2 text-center">Status</div>
+          <div class="col-span-1 text-right">Action</div>
+        </div>
+
+        <!-- Sticky Stacking Subscription Rows Container -->
+        <div id="subscriptions-list" class="space-y-3">
+          <!-- Populated dynamically via JS with Sticky Stacking & Left-to-Right Hover Sweep -->
+        </div>
+
+        <!-- Grey Footnote under Table -->
+        <div class="rounded-xl px-5 py-3.5 bg-alabaster border border-hairline flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-muted font-mono">
+          <span>Monthly total includes yearly ÷12 and weekly ×52÷12. All subscriptions are priced in CHF; no exchange conversion is applied.</span>
+          <span class="text-obsidian font-semibold">SQLModel . Rappen Precision</span>
+        </div>
+
+      </div>
+
+
+      <!-- =================================================================
+           BILLING HISTORY ACCORDION / LEDGER SECTION (Integrated cleanly)
+      ================================================================== -->
+      <div class="pt-6">
+        <div class="rounded-2xl bg-alabaster border border-hairline p-6 sm:p-8 space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-hairline pb-5">
+            <div>
+              <span class="eyebrow text-[10px]">RENEWAL ARCHIVE</span>
+              <div class="flex items-center gap-3 mt-1">
+                <h3 class="font-display text-2xl font-bold uppercase text-obsidian">Recorded Billing History</h3>
+                <span id="history-count-badge" class="px-2.5 py-0.5 rounded text-xs font-mono bg-white border border-hairline text-obsidian">5 records</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <input 
+                id="history-search" 
+                type="text" 
+                oninput="renderBillingHistory()" 
+                placeholder="Filter history..." 
+                class="px-3.5 py-2 rounded-lg bg-white border border-hairline text-xs text-obsidian placeholder-muted focus:outline-none focus:border-gold"
+              />
+              <button onclick="exportHistoryCSV()" class="sweep-gold-btn btn-dark px-5 py-2.5 rounded-lg bg-obsidian text-white text-xs font-semibold">
+                Export CSV
+              </button>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-hairline bg-white overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-hairline text-[11px] font-mono uppercase tracking-wider text-muted bg-alabaster">
+                  <th class="py-3.5 px-6">Subscription</th>
+                  <th class="py-3.5 px-6">Renewal Date</th>
+                  <th class="py-3.5 px-6 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="history-tbody" class="divide-y divide-hairline text-sm">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================================
+         VIEW 02 // WORKSPACE SETTINGS
+    ==================================================================== -->
+    <section id="view-settings" class="hidden space-y-8 pt-4">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-hairline pb-8">
+        <div>
+          <div class="eyebrow mb-2">
+            02 // WORKSPACE . PREFERENCES
+          </div>
+          <h2 class="authority-headline text-4xl sm:text-6xl text-obsidian">
+            WORKSPACE SETTINGS
+          </h2>
+          <p class="text-xs sm:text-sm font-mono text-muted mt-2">
+            Manage your account, default Swiss franc preferences, and renewal reminder timing.
+          </p>
+        </div>
+
+        <button onclick="navigateSection('dashboard')" class="sweep-gold-btn px-6 py-3 rounded-lg bg-alabaster border border-hairline text-xs font-semibold text-obsidian">
+          Back to Dashboard
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Account Card -->
+        <div class="rounded-2xl p-6 bg-white border border-hairline space-y-5 shadow-sm">
+          <div>
+            <span class="eyebrow text-[10px]">01 // IDENTITY</span>
+            <h3 class="font-display text-xl font-bold uppercase text-obsidian mt-1">Account</h3>
+            <p class="text-xs text-muted">Your personal details for this workspace.</p>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-mono uppercase text-muted mb-1.5">Full name</label>
+              <input id="settings-name" type="text" value="Lena Müller" class="w-full px-4 py-2.5 rounded-lg bg-alabaster border border-hairline text-sm text-obsidian focus:outline-none focus:border-gold" />
+            </div>
+            <div>
+              <label class="block text-xs font-mono uppercase text-muted mb-1.5">Email address</label>
+              <input id="settings-email" type="email" value="lena.mueller@example.com" class="w-full px-4 py-2.5 rounded-lg bg-alabaster border border-hairline text-sm text-obsidian focus:outline-none focus:border-gold" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Preferences Card -->
+        <div class="rounded-2xl p-6 bg-white border border-hairline space-y-5 shadow-sm">
+          <div>
+            <span class="eyebrow text-[10px]">02 // LOCALE</span>
+            <h3 class="font-display text-xl font-bold uppercase text-obsidian mt-1">Preferences</h3>
+            <p class="text-xs text-muted">Set the defaults for new subscriptions.</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-mono uppercase text-muted mb-1.5">Default currency</label>
+              <select class="w-full px-4 py-2.5 rounded-lg bg-alabaster border border-hairline text-sm text-obsidian font-mono">
+                <option value="CHF">CHF . Swiss franc</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-mono uppercase text-muted mb-1.5">Language</label>
+              <select class="w-full px-4 py-2.5 rounded-lg bg-alabaster border border-hairline text-sm text-obsidian">
+                <option>English</option>
+                <option>Deutsch (CH)</option>
+                <option>Français (CH)</option>
+              </select>
+            </div>
+          </div>
+          <p class="text-xs text-muted font-mono leading-relaxed">
+            Used for new subscriptions. Existing amounts keep their currency; no exchange conversion is applied. <br/>
+            <span class="text-obsidian font-semibold">Time zone . Europe/Zurich</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Renewal Notifications Card -->
+      <div class="rounded-2xl p-6 bg-white border border-hairline space-y-6 shadow-sm">
+        <div>
+          <span class="eyebrow text-[10px]">03 // ALERTS</span>
+          <h3 class="font-display text-xl font-bold uppercase text-obsidian mt-1">Renewal notifications</h3>
+          <p class="text-xs text-muted">Get one combined reminder before your subscriptions renew.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <label class="flex items-center justify-between p-4 rounded-xl bg-alabaster border border-hairline cursor-pointer">
+            <div>
+              <p class="text-sm font-semibold text-obsidian">In-app reminders</p>
+              <p class="text-xs text-muted">Show upcoming renewals in PayAll.</p>
+            </div>
+            <input id="settings-inapp-toggle" type="checkbox" checked class="w-5 h-5 accent-obsidian rounded cursor-pointer" />
+          </label>
+
+          <label class="flex items-center justify-between p-4 rounded-xl bg-alabaster border border-hairline cursor-pointer">
+            <div>
+              <p class="text-sm font-semibold text-obsidian">Email reminders</p>
+              <p class="text-xs text-muted">Send to lena.mueller@example.com.</p>
+            </div>
+            <input id="settings-email-toggle" type="checkbox" checked class="w-5 h-5 accent-obsidian rounded cursor-pointer" />
+          </label>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-xs font-mono uppercase text-muted mb-1.5">Remind me (PATCH /settings)</label>
+            <select id="settings-reminder-days" class="w-full px-4 py-2.5 rounded-lg bg-alabaster border border-hairline text-sm text-obsidian font-mono">
+              <option value="3">3 days before renewal</option>
+              <option value="7" selected>7 days before renewal (Default)</option>
+              <option value="14">14 days before renewal</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-mono uppercase text-muted mb-1.5">Reminder time . Europe/Zurich</label>
+            <select class="w-full px-4 py-2.5 rounded-lg bg-alabaster border border-hairline text-sm text-obsidian font-mono">
+              <option>09:00</option>
+              <option>12:00</option>
+              <option>18:00</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-hairline">
+          <button onclick="navigateSection('dashboard')" class="px-5 py-2.5 rounded-lg border border-hairline text-xs font-mono text-muted hover:text-obsidian">
+            Cancel
+          </button>
+          <button onclick="saveSettings()" class="sweep-gold-btn px-7 py-2.5 rounded-lg bg-alabaster text-obsidian border border-hairline text-xs font-semibold">
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+
+  <!-- =====================================================================
+       LUXURY PARALLAX ARCHITECTURAL DIVIDER & STORYTELLING ABOUT US SECTION
+       Features Two-Tone PAYALL without dot and Classic Executive Subtitle
+  ====================================================================== -->
+  <section id="about-section" class="border-t border-hairline bg-alabaster overflow-hidden">
+    
+    <!-- Full-Width Parallax Architectural Window -->
+    <div 
+      class="relative h-72 sm:h-[420px] w-full bg-cover bg-center bg-fixed flex items-center justify-center"
+      style="background-image: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop');"
+    >
+      <div class="absolute inset-0 bg-obsidian/65"></div>
+      <div class="relative z-10 text-center px-6 max-w-3xl space-y-3">
+        <span class="eyebrow text-gold-light">SWISS PRECISION</span>
+        <h3 class="authority-headline text-3xl sm:text-5xl text-white tracking-wide">
+          EVERY SUBSCRIPTION. ONE CLEAR VIEW.
+        </h3>
+      </div>
+    </div>
+    
+    <!-- 50/50 Split Motion Storytelling Section (Zero Em-Dashes) -->
+    <div class="max-w-7xl mx-auto px-6 sm:px-10 py-24 grid grid-cols-1 lg:grid-cols-12 gap-14 items-center">
+      
+      <!-- Left Half: Motion Text Reveal -->
+      <div class="lg:col-span-6 story-reveal-left space-y-6">
+        <div class="eyebrow">ABOUT US // THE PAYALL PHILOSOPHY</div>
+        <h2 class="authority-headline text-5xl sm:text-7xl">
+          <span class="text-obsidian">PAY</span><span class="text-gold">ALL</span>
+        </h2>
+        <p class="executive-subtitle text-2xl sm:text-3xl text-charcoal leading-snug">
+          Built for people who want to see what they pay for.
+        </p>
+        <p class="text-sm sm:text-base text-muted leading-relaxed">
+          Streaming, transport passes, gym memberships, apps. Subscriptions are everywhere, and it's easy to forget when they renew. Then a charge you didn't expect shows up on your statement.
+        </p>
+        <p class="text-sm sm:text-base text-muted leading-relaxed">
+          PayAll puts all your subscriptions in one place and shows your monthly total in Swiss francs, down to the Rappen. Weekly, monthly and yearly plans are all added up for you. No bank login needed.
+        </p>
+
+        <!-- Key Architectural Pillars -->
+        <div class="grid grid-cols-3 gap-4 pt-4 border-t border-hairline">
+          <div>
+            <span class="font-display text-2xl font-bold text-obsidian block">100%</span>
+            <span class="font-mono text-[10px] uppercase tracking-wider text-muted">Rappen Precision</span>
+          </div>
+          <div>
+            <span class="font-display text-2xl font-bold text-obsidian block">CHF</span>
+            <span class="font-mono text-[10px] uppercase tracking-wider text-muted">Normalized Ledger</span>
+          </div>
+          <div>
+            <span class="font-display text-2xl font-bold text-gold-dark block">ZERO</span>
+            <span class="font-mono text-[10px] uppercase tracking-wider text-muted">Bank Connections</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right Half: Rising Luxury Architectural Picture (Replaces calculator phone photo) -->
+      <div class="lg:col-span-6 story-reveal-right">
+        <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-hairline bg-obsidian group">
+          <img 
+            src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1400&auto=format&fit=crop" 
+            alt="PayAll Swiss Architectural Minimalist Space" 
+            class="w-full h-[460px] sm:h-[520px] object-cover object-center transition-transform duration-700 group-hover:scale-105" 
+          />
+          <div class="absolute inset-0 bg-gradient-to-t from-obsidian/80 via-transparent to-transparent"></div>
+          <div class="absolute bottom-6 left-6 right-6 p-5 rounded-xl bg-white/95 backdrop-blur-md border border-hairline flex items-center justify-between">
+            <div>
+              <span class="eyebrow text-[9px]">DESIGNED IN SWITZERLAND</span>
+              <p class="font-display text-base font-bold uppercase text-obsidian mt-0.5">Private Subscription Ledger</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </section>
+
+
+  <!-- =====================================================================
+       SLIDE-OVER DRAWER: ADD / CUSTOM / EDIT SUBSCRIPTION
+  ====================================================================== -->
+  <div id="drawer-overlay" class="fixed inset-0 z-50 hidden">
+    <div onclick="closeDrawer()" class="drawer-backdrop absolute inset-0"></div>
+
+    <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
+      <div id="drawer-panel" class="w-screen max-w-xl bg-paper border-l border-hairline shadow-2xl flex flex-col justify-between overflow-y-auto">
+        
+        <!-- Drawer Top Header -->
+        <div class="p-6 sm:p-8 border-b border-hairline flex items-start justify-between gap-4 sticky top-0 bg-paper/95 backdrop-blur-xl z-20">
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="drawer-eyebrow" class="eyebrow text-[10px]">SELECT A SERVICE</span>
+              <span id="drawer-mode-badge" class="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-gold/15 text-gold-dark border border-gold/30 font-semibold">NEW</span>
+            </div>
+            <h3 id="drawer-title" class="authority-headline text-3xl sm:text-4xl text-obsidian mt-1">
+              ADD A SUBSCRIPTION
+            </h3>
+            <p id="drawer-subtitle" class="text-xs text-muted mt-1">
+              Choose a service, then configure the details you want to track.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <div id="edit-yearly-box" class="hidden px-3.5 py-2 rounded-lg bg-alabaster border border-hairline text-right">
+              <span class="block font-mono text-[9px] uppercase tracking-wider text-muted">TOTAL PER YEAR</span>
+              <span id="edit-yearly-amount" class="font-mono text-sm font-bold text-obsidian">95.04 CHF</span>
+            </div>
+
+            <button onclick="closeDrawer()" class="w-9 h-9 rounded-lg bg-alabaster hover:bg-stone border border-hairline flex items-center justify-center text-muted hover:text-obsidian">
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <!-- Drawer Body Form -->
+        <form id="subscription-form" onsubmit="handleFormSubmit(event)" class="p-6 sm:p-8 space-y-6 flex-1">
+          <input type="hidden" id="form-mode" value="listed" />
+          <input type="hidden" id="form-edit-id" value="" />
+
+          <!-- Edit Mode Subscription Switcher (Lets user pick any subscription when clicking "Edit Subscriptions") -->
+          <div id="edit-selector-section" class="hidden space-y-2 pb-4 border-b border-hairline">
+            <label class="block text-xs font-mono uppercase text-muted">Select active subscription to edit</label>
+            <select 
+              id="edit-subscription-picker" 
+              onchange="openEditModal(this.value)"
+              class="w-full px-4 py-2.5 rounded-lg bg-alabaster border border-hairline text-sm font-semibold text-obsidian focus:outline-none focus:border-gold"
+            ></select>
+          </div>
+
+          <!-- Popular Service Picker -->
+          <div id="service-picker-section" class="space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono uppercase tracking-wider text-muted">Popular Services</span>
+              <button type="button" onclick="switchDrawerToCustom()" class="text-xs font-mono text-gold-dark font-semibold hover:underline">
+                + Add custom service →
+              </button>
+            </div>
+
+            <input 
+              id="catalog-search" 
+              type="text" 
+              oninput="filterServiceCatalog()" 
+              placeholder="Search popular services (Netflix, Spotify, SBB...)" 
+              class="w-full px-4 py-2.5 rounded-lg bg-alabaster border border-hairline text-xs text-obsidian placeholder-muted focus:outline-none focus:border-gold"
+            />
+
+            <div id="catalog-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              <!-- Populated by JS -->
+            </div>
+
+            <button type="button" onclick="switchDrawerToCustom()" class="w-full p-3 rounded-lg bg-alabaster hover:bg-stone border border-dashed border-muted/40 flex items-center justify-between text-left transition">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-obsidian text-white flex items-center justify-center font-mono font-bold">+</div>
+                <div>
+                  <p class="text-xs font-semibold text-obsidian">Add custom</p>
+                  <p class="text-[10px] text-muted">Create your own entry (e.g., Gym & wellness)</p>
+                </div>
+              </div>
+              <span class="font-mono text-[10px] text-obsidian font-semibold uppercase">CUSTOM →</span>
+            </button>
+          </div>
+
+          <!-- Duplicate Service Warning Banner -->
+          <div id="duplicate-warning" class="hidden rounded-lg p-3.5 bg-[#FDF8EE] border border-[#EED6A7] flex items-center gap-3 text-xs text-[#9A5B13] font-medium">
+            <span class="font-mono text-sm">!</span>
+            <span id="duplicate-warning-text">Service already exists in your tracked list. Duplicates are allowed.</span>
+          </div>
+
+          <!-- Service Name & Category -->
+          <div class="space-y-4 pt-2 border-t border-hairline">
+            <div class="flex items-center justify-between">
+              <span class="eyebrow text-[10px]">SUBSCRIPTION DETAILS</span>
+              <span class="font-mono text-[10px] text-muted">* Required fields</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-mono text-muted mb-1.5">
+                  Service Name <span class="text-gold-dark">*</span>
+                </label>
+                <input 
+                  id="form-service-name" 
+                  type="text" 
+                  required 
+                  maxlength="100"
+                  oninput="checkDuplicateService(this.value)"
+                  placeholder="Enter a name you recognize" 
+                  class="w-full px-4 py-2.5 rounded-lg bg-alabaster border border-hairline text-sm text-obsidian focus:outline-none focus:border-gold"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-mono text-muted mb-1.5">
+                  Category <span class="text-gold-dark">*</span>
+                </label>
+                <select 
+                  id="form-category" 
+                  class="w-full px-4 py-2.5 rounded-lg bg-alabaster border border-hairline text-sm text-obsidian focus:outline-none focus:border-gold"
+                >
+                  <option value="Entertainment">Entertainment</option>
+                  <option value="Transport">Transport</option>
+                  <option value="Music">Music</option>
+                  <option value="Shopping">Shopping</option>
+                  <option value="Fitness">Fitness</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Billing Configuration -->
+          <div class="space-y-4 pt-4 border-t border-hairline">
+            <span class="eyebrow text-[10px]">BILLING CONFIGURATION</span>
+
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-4">
+              <div class="sm:col-span-5">
+                <label class="block text-xs font-mono text-muted mb-1.5">
+                  Source price <span class="text-gold-dark">*</span>
+                </label>
+                <input 
+                  id="form-price" 
+                  type="number" 
+                  step="0.01" 
+                  min="0.01" 
+                  max="100000" 
+                  required 
+                  oninput="updateDemoEquivalent()"
+                  placeholder="18.90" 
+                  class="w-full px-4 py-2.5 rounded-lg bg-alabaster border border-hairline text-sm font-mono text-obsidian focus:outline-none focus:border-gold"
+                />
+                <span class="text-[10px] font-mono text-muted mt-1 block">Price must be &gt; 0</span>
+              </div>
+
+              <div class="sm:col-span-3">
+                <label class="block text-xs font-mono text-muted mb-1.5">Currency</label>
+                <select 
+                  id="form-currency" 
+                  onchange="updateDemoEquivalent()"
+                  class="w-full px-3 py-2.5 rounded-lg bg-alabaster border border-hairline text-sm font-mono text-obsidian focus:outline-none focus:border-gold"
+                >
+                  <option value="CHF">CHF</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                </select>
+              </div>
+
+              <div class="sm:col-span-4">
+                <label class="block text-xs font-mono text-muted mb-1.5">Demo equivalent</label>
+                <div class="px-3.5 py-2.5 rounded-lg bg-stone border border-hairline flex items-center justify-between text-sm font-mono text-obsidian font-semibold">
+                  <span id="form-demo-chf">18.90 CHF</span>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-white text-muted">Demo</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div>
+                <label class="block text-xs font-mono text-muted mb-1.5">
+                  Billing frequency <span class="text-gold-dark">*</span>
+                </label>
+                <select 
+                  id="form-period" 
+                  onchange="updateDemoEquivalent()"
+                  class="w-full px-4 py-2.5 rounded-lg bg-alabaster border border-hairline text-sm text-obsidian focus:outline-none focus:border-gold"
+                >
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly" selected>Monthly</option>
+                  <option value="yearly">Yearly</option>
+                </select>
+                <span class="text-[10px] font-mono text-muted mt-1 block">Weekly . Monthly . Yearly</span>
+              </div>
+
+              <div>
+                <label class="block text-xs font-mono text-muted mb-1.5">
+                  Start date <span class="text-gold-dark">*</span>
+                </label>
+                <input 
+                  id="form-start-date" 
+                  type="date" 
+                  required 
+                  value="2025-10-17"
+                  min="2000-01-01"
+                  max="2027-12-31"
+                  class="w-full px-4 py-2.5 rounded-lg bg-alabaster border border-hairline text-sm font-mono text-obsidian focus:outline-none focus:border-gold"
+                />
+                <span class="text-[10px] font-mono text-muted mt-1 block">Format: YYYY-MM-DD</span>
+              </div>
+            </div>
+
+            <label class="flex items-center gap-3 p-3.5 rounded-lg bg-alabaster border border-hairline cursor-pointer">
+              <input id="form-notification" type="checkbox" checked class="w-4 h-4 accent-obsidian rounded" />
+              <div>
+                <p class="text-xs font-semibold text-obsidian">Activate notification</p>
+                <p class="text-[11px] text-muted">Optional renewal reminder before charge date</p>
+              </div>
+            </label>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <label id="card-mode-manual" class="p-3.5 rounded-lg bg-alabaster border border-hairline cursor-pointer flex items-start gap-3 transition">
+                <input type="radio" name="autopay_mode" value="manual" onchange="updateAutopayCardStyles()" class="mt-1 accent-obsidian" />
+                <div>
+                  <p class="text-xs font-semibold text-obsidian">Mark manually</p>
+                  <p class="text-[11px] text-muted mt-0.5">Keep renewals pending until you confirm and mark them paid.</p>
+                </div>
+              </label>
+
+              <label id="card-mode-auto" class="p-3.5 rounded-lg bg-emerald-tint border border-emerald/40 cursor-pointer flex items-start gap-3 transition">
+                <input type="radio" name="autopay_mode" value="auto" checked onchange="updateAutopayCardStyles()" class="mt-1 accent-emerald" />
+                <div>
+                  <div class="flex items-center gap-2">
+                    <p class="text-xs font-semibold text-obsidian">Mark automatically</p>
+                    <span class="text-[10px] font-mono text-emerald font-semibold">. Enabled</span>
+                  </div>
+                  <p class="text-[11px] text-muted mt-0.5">Mark renewals paid on their scheduled renewal date.</p>
+                </div>
+              </label>
+            </div>
+
+            <div class="p-3 rounded-lg bg-alabaster border border-hairline text-[11px] font-mono text-muted leading-relaxed">
+              Info: Tracking only. "Marked paid" is a tracking label, not a verified payment. PayAll does not make payments or connect to bank or service accounts.
+            </div>
+          </div>
+
+          <div id="form-error-box" class="hidden p-3.5 rounded-lg bg-crimson-tint border border-crimson/30 text-xs text-crimson font-mono"></div>
+
+          <!-- Drawer Footer Buttons -->
+          <div class="pt-4 border-t border-hairline flex items-center justify-between gap-3">
+            <button 
+              type="button" 
+              id="btn-drawer-delete" 
+              onclick="handleDeleteFromDrawer()" 
+              class="hidden px-4 py-2.5 rounded-lg bg-crimson-tint hover:bg-crimson text-crimson hover:text-white border border-crimson/30 text-xs font-mono font-semibold transition"
+            >
+              Delete
+            </button>
+
+            <div class="flex items-center gap-3 ml-auto">
+              <button type="button" onclick="closeDrawer()" class="px-5 py-2.5 rounded-lg border border-hairline text-xs font-mono text-muted hover:text-obsidian">
+                Cancel
+              </button>
+              <button type="submit" id="drawer-submit-btn" class="sweep-gold-btn px-7 py-2.5 rounded-lg bg-alabaster text-obsidian border border-hairline font-semibold text-xs">
+                + Link an App
+              </button>
+            </div>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =====================================================================
+       LUXURY ARCHITECTURAL FOOTER WITH DEVELOPER CREDITS & API SWITCHER
+       Strictly Two-Tone "PAYALL" (Zero Dot, Zero "ATELIER", Zero Em-Dashes)
+  ====================================================================== -->
+  <footer class="border-t border-hairline bg-obsidian text-white pt-16 pb-12 px-6 sm:px-10">
+    <div class="max-w-7xl mx-auto space-y-12">
+      
+      <!-- Top Grid: Brand, Navigation, Development Team Credits -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-10 pb-12 border-b border-white/15">
+        
+        <!-- Brand Column -->
+        <div class="md:col-span-5 space-y-4">
+          <div class="flex items-center">
+            <span class="font-display font-bold text-3xl tracking-[0.16em] uppercase">
+              <span class="text-white">PAY</span><span class="text-gold">ALL</span>
+            </span>
+          </div>
+          <p class="text-xs sm:text-sm text-white/70 max-w-sm leading-relaxed">
+            Swiss subscription intelligence and personal recurring ledger. Built for complete transparency, normalized CHF reporting, and proactive renewal management.
+          </p>
+        </div>
+
+        <!-- Navigation Column -->
+        <div class="md:col-span-3 space-y-3">
+          <span class="eyebrow text-[10px] text-gold">NAVIGATION</span>
+          <ul class="space-y-2 text-xs font-mono uppercase tracking-wider text-white/80">
+            <li><button onclick="navigateSection('dashboard')" class="hover:text-gold transition">01 / Dashboard</button></li>
+            <li><button onclick="openAddModal('listed')" class="hover:text-gold transition">02 / Add Subscription</button></li>
+            <li><button onclick="navigateSection('settings')" class="hover:text-gold transition">03 / Workspace Settings</button></li>
+            <li><button onclick="navigateSection('about')" class="hover:text-gold transition">04 / About PayAll</button></li>
+          </ul>
+        </div>
+
+        <!-- Development Team Credits -->
+        <div class="md:col-span-4 space-y-3">
+          <span class="eyebrow text-[10px] text-gold">ARCHITECTS & DEVELOPERS</span>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+            <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+              <p class="text-xs font-semibold text-white">Hoi Ying Yong</p>
+              <p class="text-[10px] font-mono text-white/60 mt-0.5">Data & API Exploration</p>
+            </div>
+            <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+              <p class="text-xs font-semibold text-white">Polina Yemelianenkova</p>
+              <p class="text-[10px] font-mono text-white/60 mt-0.5">Interaction & Design</p>
+            </div>
+            <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+              <p class="text-xs font-semibold text-white">Elpidio Basile Dogbevi</p>
+              <p class="text-[10px] font-mono text-white/60 mt-0.5">Users & Workflows</p>
+            </div>
+            <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+              <p class="text-xs font-semibold text-white">Mohamed Ahmed</p>
+              <p class="text-[10px] font-mono text-white/60 mt-0.5">Frontend & Coordination</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Copyright -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-white/60">
+        <div>
+          © 2026 PayAll. FHNW Web-Based Applications Project. All rights reserved.
+        </div>
+        <div class="text-white/40">
+          Basel . Switzerland
+        </div>
+      </div>
+
+    </div>
+  </footer>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-2 pointer-events-none"></div>
+
+
+  <!-- =====================================================================
+       JAVASCRIPT ENGINE:
+       1. ApiService Module (with USE_MOCKS switch & FastAPI fetch endpoints)
+       2. Authentic Brand SVG Logos & Exact Annualized Formula
+       3. UI Rendering, Delayed Hero Scroll Recession & Event Handlers
+  ====================================================================== -->
+  <script>
+    /* =====================================================================
+       1. MODULAR API SERVICE LAYER (`api.js` ready for FastAPI backend)
+    ====================================================================== */
+    const ApiService = {
+      USE_MOCKS: true,
+      BASE_URL: 'http://127.0.0.1:8000',
+      BEARER_TOKEN: 'demo-jwt-token-lena-mueller',
+
+      headers() {
+        return {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.BEARER_TOKEN}`
+        };
+      },
+
+      // GET /subscriptions?search=...&sort=...&order=...
+      async getSubscriptions(search = '', sort = '', order = 'asc') {
+        if (this.USE_MOCKS) {
+          return {
+            subscriptions: [...AppState.subscriptions],
+            monthly_total: calculateNormalizedMonthlyTotal(AppState.subscriptions),
+            currency: 'CHF',
+            cancelled_excluded: 0
+          };
+        }
+        const params = new URLSearchParams();
+        if (search) params.set('search', search);
+        if (sort) params.set('sort', sort);
+        if (order) params.set('order', order);
+        const res = await fetch(`${this.BASE_URL}/subscriptions?${params.toString()}`, {
+          headers: this.headers()
+        });
+        if (!res.ok) throw new Error('Failed to fetch subscriptions from FastAPI');
+        return await res.json();
+      },
+
+      // POST /subscriptions
+      async createSubscription(payload) {
+        if (this.USE_MOCKS) {
+          const newSub = {
+            id: AppState.nextId++,
+            user_id: 1,
+            service: payload.service,
+            is_custom: payload.is_custom,
+            category_id: payload.category_id || 1,
+            category: payload.category || 'Entertainment',
+            price: Number(payload.price),
+            currency: 'CHF',
+            billing_period: payload.billing_period,
+            start_date: payload.start_date,
+            next_charge_date: computeNextChargeDate(payload.start_date, payload.billing_period),
+            period_label: computePeriodRangeLabel(payload.start_date, payload.billing_period),
+            auto_pay: payload.auto_pay,
+            payment_status: payload.auto_pay ? 'paid' : 'pending',
+            notification_enabled: payload.notification_enabled
+          };
+          AppState.subscriptions.unshift(newSub);
+          return newSub;
+        }
+        const res = await fetch(`${this.BASE_URL}/subscriptions`, {
+          method: 'POST',
+          headers: this.headers(),
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('Failed to create subscription');
+        return await res.json();
+      },
+
+      // PATCH /subscriptions/{id}
+      async updateSubscription(id, payload) {
+        if (this.USE_MOCKS) {
+          const idx = AppState.subscriptions.findIndex(s => s.id === Number(id));
+          if (idx === -1) throw new Error('Subscription not found');
+          const updated = {
+            ...AppState.subscriptions[idx],
+            ...payload,
+            price: Number(payload.price ?? AppState.subscriptions[idx].price),
+            next_charge_date: computeNextChargeDate(payload.start_date || AppState.subscriptions[idx].start_date, payload.billing_period || AppState.subscriptions[idx].billing_period),
+            period_label: computePeriodRangeLabel(payload.start_date || AppState.subscriptions[idx].start_date, payload.billing_period || AppState.subscriptions[idx].billing_period),
+            payment_status: payload.auto_pay ? 'paid' : AppState.subscriptions[idx].payment_status
+          };
+          AppState.subscriptions[idx] = updated;
+          return updated;
+        }
+        const res = await fetch(`${this.BASE_URL}/subscriptions/${id}`, {
+          method: 'PATCH',
+          headers: this.headers(),
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('Failed to update subscription');
+        return await res.json();
+      },
+
+      // POST /subscriptions/{id}/payments
+      async markPayment(id) {
+        if (this.USE_MOCKS) {
+          const sub = AppState.subscriptions.find(s => s.id === Number(id));
+          if (sub) {
+            sub.payment_status = 'paid';
+            AppState.billingHistory.unshift({
+              id: Date.now(),
+              service: sub.service,
+              category: sub.category,
+              billing_period: capitalize(sub.billing_period),
+              renewal_date: '17 Oct 2025',
+              period_range: sub.period_label,
+              amount: sub.price
+            });
+          }
+          return sub;
+        }
+        const res = await fetch(`${this.BASE_URL}/subscriptions/${id}/payments`, {
+          method: 'POST',
+          headers: this.headers()
+        });
+        if (!res.ok) throw new Error('Failed to mark payment');
+        return await res.json();
+      },
+
+      // DELETE /subscriptions/{id}
+      async deleteSubscription(id) {
+        if (this.USE_MOCKS) {
+          AppState.subscriptions = AppState.subscriptions.filter(s => s.id !== Number(id));
+          return true;
+        }
+        const res = await fetch(`${this.BASE_URL}/subscriptions/${id}`, {
+          method: 'DELETE',
+          headers: this.headers()
+        });
+        if (!res.ok) throw new Error('Failed to delete subscription');
+        return true;
+      }
+    };
+
+
+    /* =====================================================================
+       2. APPLICATION STATE & SEED DATA
+    ====================================================================== */
+    const AppState = {
+      nextId: 8,
+      reminderDays: 7,
+
+      catalog: [
+        { service: 'Netflix', category: 'Entertainment', price: 18.90, period: 'monthly' },
+        { service: 'Spotify', category: 'Entertainment', price: 14.95, period: 'monthly' },
+        { service: 'SBB Halbtax', category: 'Transport', price: 190.00, period: 'yearly' },
+        { service: 'U-Abo', category: 'Transport', price: 86.00, period: 'monthly' },
+        { service: 'Disney+', category: 'Entertainment', price: 9.90, period: 'monthly' },
+        { service: 'Amazon Prime', category: 'Shopping', price: 9.90, period: 'monthly' }
+      ],
+
+      subscriptions: [
+        {
+          id: 1,
+          user_id: 1,
+          service: 'Netflix',
+          is_custom: false,
+          category_id: 1,
+          category: 'Entertainment',
+          price: 18.90,
+          currency: 'CHF',
+          billing_period: 'monthly',
+          start_date: '2025-10-27',
+          next_charge_date: '2025-11-27',
+          period_label: '27 Oct to 27 Nov 2025',
+          auto_pay: false,
+          payment_status: 'pending',
+          notification_enabled: true
+        },
+        {
+          id: 2,
+          user_id: 1,
+          service: 'Spotify',
+          is_custom: false,
+          category_id: 2,
+          category: 'Entertainment',
+          price: 14.95,
+          currency: 'CHF',
+          billing_period: 'monthly',
+          start_date: '2025-10-13',
+          next_charge_date: '2025-11-13',
+          period_label: '13 Oct to 13 Nov 2025',
+          auto_pay: true,
+          payment_status: 'paid',
+          notification_enabled: false
+        },
+        {
+          id: 3,
+          user_id: 1,
+          service: 'SBB Halbtax',
+          is_custom: false,
+          category_id: 3,
+          category: 'Transport . Annual',
+          price: 190.00,
+          currency: 'CHF',
+          billing_period: 'yearly',
+          start_date: '2025-10-27',
+          next_charge_date: '2026-10-27',
+          period_label: '27 Oct 2025 to 27 Oct 2026',
+          auto_pay: false,
+          payment_status: 'pending',
+          notification_enabled: true
+        },
+        {
+          id: 4,
+          user_id: 1,
+          service: 'U-Abo',
+          is_custom: false,
+          category_id: 3,
+          category: 'Transport',
+          price: 86.00,
+          currency: 'CHF',
+          billing_period: 'monthly',
+          start_date: '2025-10-14',
+          next_charge_date: '2025-11-14',
+          period_label: '14 Oct to 14 Nov 2025',
+          auto_pay: true,
+          payment_status: 'paid',
+          notification_enabled: true
+        },
+        {
+          id: 5,
+          user_id: 1,
+          service: 'Disney+',
+          is_custom: false,
+          category_id: 1,
+          category: 'Entertainment',
+          price: 9.90,
+          currency: 'CHF',
+          billing_period: 'monthly',
+          start_date: '2025-10-15',
+          next_charge_date: '2025-11-15',
+          period_label: '15 Oct to 15 Nov 2025',
+          auto_pay: true,
+          payment_status: 'paid',
+          notification_enabled: false
+        },
+        {
+          id: 6,
+          user_id: 1,
+          service: 'Amazon Prime',
+          is_custom: false,
+          category_id: 4,
+          category: 'Shopping',
+          price: 9.90,
+          currency: 'CHF',
+          billing_period: 'monthly',
+          start_date: '2025-10-16',
+          next_charge_date: '2025-11-16',
+          period_label: '16 Oct to 16 Nov 2025',
+          auto_pay: true,
+          payment_status: 'paid',
+          notification_enabled: false
+        },
+        {
+          id: 7,
+          user_id: 1,
+          service: 'PureGym',
+          is_custom: true,
+          category_id: 5,
+          category: 'Fitness',
+          price: 57.00,
+          currency: 'CHF',
+          billing_period: 'monthly',
+          start_date: '2025-10-17',
+          next_charge_date: '2025-11-17',
+          period_label: '17 Oct to 17 Nov 2025',
+          auto_pay: true,
+          payment_status: 'paid',
+          notification_enabled: true
+        }
+      ],
+
+      billingHistory: [
+        { id: 101, service: 'PureGym', category: 'Fitness', billing_period: 'Monthly', renewal_date: '17 Oct 2025', period_range: '17 Oct to 17 Nov 2025', amount: 57.00 },
+        { id: 102, service: 'Amazon Prime', category: 'Shopping', billing_period: 'Monthly', renewal_date: '16 Oct 2025', period_range: '16 Oct to 16 Nov 2025', amount: 9.90 },
+        { id: 103, service: 'Disney+', category: 'Entertainment', billing_period: 'Monthly', renewal_date: '15 Oct 2025', period_range: '15 Oct to 15 Nov 2025', amount: 9.90 },
+        { id: 104, service: 'U-Abo', category: 'Transport', billing_period: 'Monthly', renewal_date: '14 Oct 2025', period_range: '14 Oct to 14 Nov 2025', amount: 86.00 },
+        { id: 105, service: 'Spotify', category: 'Entertainment', billing_period: 'Monthly', renewal_date: '13 Oct 2025', period_range: '13 Oct to 13 Nov 2025', amount: 14.95 }
+      ]
+    };
+
+
+    /* =====================================================================
+       3. AUTHENTIC BRAND SVG SYMBOLS & EXACT CALCULATIONS
+    ====================================================================== */
+    // Monthly Total = monthly + (yearly / 12) + (weekly * 52 / 12)
+    function calculateNormalizedMonthlyTotal(subs) {
+      let total = 0;
+      subs.forEach(sub => {
+        if (sub.billing_period === 'monthly') {
+          total += sub.price;
+        } else if (sub.billing_period === 'yearly') {
+          total += sub.price / 12;
+        } else if (sub.billing_period === 'weekly') {
+          total += (sub.price * 52) / 12;
+        }
+      });
+      return Math.round(total * 100) / 100;
+    }
+
+    // Exact Annualized Total Formula = (monthly * 12) + yearly + (weekly * 52)
+    function calculateAnnualizedTotal(subs) {
+      let annual = 0;
+      subs.forEach(sub => {
+        if (sub.billing_period === 'monthly') {
+          annual += sub.price * 12;
+        } else if (sub.billing_period === 'yearly') {
+          annual += sub.price;
+        } else if (sub.billing_period === 'weekly') {
+          annual += sub.price * 52;
+        }
+      });
+      return Math.round(annual * 100) / 100;
+    }
+
+    function formatCHF(amount) {
+      return Number(amount).toLocaleString('de-CH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }) + ' CHF';
+    }
+
+    function capitalize(str) {
+      if (!str) return '';
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function computeNextChargeDate(startDateStr, period) {
+      const d = new Date(startDateStr || '2025-10-17');
+      if (isNaN(d.getTime())) return '2025-11-17';
+      if (period === 'weekly') d.setDate(d.getDate() + 7);
+      else if (period === 'yearly') d.setFullYear(d.getFullYear() + 1);
+      else d.setMonth(d.getMonth() + 1);
+      return d.toISOString().split('T')[0];
+    }
+
+    function computePeriodRangeLabel(startDateStr, period) {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const d1 = new Date(startDateStr || '2025-10-17');
+      if (isNaN(d1.getTime())) return '17 Oct to 17 Nov 2025';
+      const d2 = new Date(d1);
+      if (period === 'weekly') d2.setDate(d2.getDate() + 7);
+      else if (period === 'yearly') d2.setFullYear(d2.getFullYear() + 1);
+      else d2.setMonth(d2.getMonth() + 1);
+
+      return `${d1.getDate()} ${months[d1.getMonth()]} to ${d2.getDate()} ${months[d2.getMonth()]} ${d2.getFullYear()}`;
+    }
+
+    // Authentic Vector Brand Symbols
+    function getBrandSvgLogo(service) {
+      const s = (service || '').toLowerCase();
+
+      if (s.includes('netflix')) {
+        return `
+          <div class="w-11 h-11 rounded-xl bg-[#141414] flex items-center justify-center shadow-sm shrink-0 border border-black/10">
+            <svg class="w-5 h-6" viewBox="0 0 24 24" fill="none">
+              <rect x="4" y="2" width="4.2" height="20" fill="#B1060F"/>
+              <rect x="15.8" y="2" width="4.2" height="20" fill="#B1060F"/>
+              <polygon points="4,2 8.2,2 20,22 15.8,22" fill="#E50914"/>
+            </svg>
+          </div>`;
+      }
+
+      if (s.includes('spotify')) {
+        return `
+          <div class="w-11 h-11 rounded-xl bg-[#1DB954] flex items-center justify-center text-white shadow-sm shrink-0">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.59 14.42c-.18.3-.56.39-.86.21-2.35-1.43-5.31-1.76-8.8-.96-.33.08-.67-.13-.75-.47-.08-.33.13-.67.47-.75 3.82-.87 7.09-.5 9.73 1.11.3.18.39.56.21.86zm1.22-2.72c-.23.37-.71.49-1.08.26-2.69-1.65-6.79-2.13-9.97-1.16-.41.12-.85-.11-.97-.52-.12-.41.11-.85.52-.97 3.63-1.1 8.15-.57 11.24 1.33.37.23.49.71.26 1.06zm.11-2.83c-3.22-1.91-8.54-2.09-11.62-1.15-.49.15-1.01-.13-1.16-.62-.15-.49.13-1.01.62-1.16 3.54-1.07 9.41-.86 13.11 1.33.44.26.59.83.33 1.27-.26.44-.83.59-1.28.33z"/>
+            </svg>
+          </div>`;
+      }
+
+      if (s.includes('sbb')) {
+        return `
+          <div class="w-11 h-11 rounded-xl bg-[#EB0000] flex items-center justify-center text-white shadow-sm shrink-0">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4M12 6v12"/>
+            </svg>
+          </div>`;
+      }
+
+      if (s.includes('u-abo') || s.includes('uabo')) {
+        return `
+          <div class="w-11 h-11 rounded-xl bg-[#D91E18] flex flex-col items-center justify-center text-white shadow-sm shrink-0">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+              <path d="M7 4v9a5 5 0 0010 0V4"/>
+            </svg>
+            <span class="font-display font-bold text-[8px] tracking-widest -mt-0.5">U-ABO</span>
+          </div>`;
+      }
+
+      if (s.includes('disney')) {
+        return `
+          <div class="w-11 h-11 rounded-xl bg-[#071849] flex flex-col items-center justify-center text-white shadow-sm shrink-0 relative overflow-hidden">
+            <svg class="w-7 h-3 -mb-1" viewBox="0 0 28 12" fill="none">
+              <path d="M3 10C7 2 19 2 25 9" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            <span class="font-serif font-bold italic text-[11px] tracking-tight">Disney<span class="text-[#38BDF8] not-italic font-sans font-extrabold">+</span></span>
+          </div>`;
+      }
+
+      if (s.includes('amazon') || s.includes('prime')) {
+        return `
+          <div class="w-11 h-11 rounded-xl bg-[#131921] flex flex-col items-center justify-center text-white shadow-sm shrink-0">
+            <span class="font-sans font-bold text-[10px] tracking-wider uppercase">prime</span>
+            <svg class="w-6 h-2 text-[#FF9900] -mt-0.5" viewBox="0 0 24 8" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M2 2c6 4 14 4 20 0"/>
+            </svg>
+          </div>`;
+      }
+
+      if (s.includes('gym') || s.includes('fitness')) {
+        return `
+          <div class="w-11 h-11 rounded-xl bg-alabaster border border-hairline flex items-center justify-center text-obsidian shadow-sm shrink-0">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6.5 6.5L17.5 17.5M3 10l7-7M14 21l7-7M2 6l4-4M18 22l4-4"/>
+            </svg>
+          </div>`;
+      }
+
+      return `
+        <div class="w-11 h-11 rounded-xl bg-obsidian text-gold flex items-center justify-center font-display font-bold text-base shadow-sm shrink-0">
+          ${escapeHtml((service || 'P').charAt(0).toUpperCase())}
+        </div>`;
+    }
+
+
+    /* =====================================================================
+       4. RENDERING DASHBOARD, SUMMARY CARDS & STICKY STACKING LIST
+    ====================================================================== */
+    async function renderDashboard() {
+      const searchVal = (document.getElementById('dashboard-search')?.value || '').trim().toLowerCase();
+      const sortVal = document.getElementById('dashboard-sort')?.value || 'default';
+
+      await ApiService.getSubscriptions(searchVal, sortVal);
+      const allSubs = AppState.subscriptions;
+
+      // 1. Update Summary Cards with Exact Formula
+      const monthlyTotal = calculateNormalizedMonthlyTotal(allSubs);
+      const annualTotal = calculateAnnualizedTotal(allSubs);
+
+      const monthlyCount = allSubs.filter(s => s.billing_period === 'monthly').length;
+      const yearlyCount = allSubs.filter(s => s.billing_period === 'yearly').length;
+      const weeklyCount = allSubs.filter(s => s.billing_period === 'weekly').length;
+
+      let breakdownParts = [];
+      if (monthlyCount > 0) breakdownParts.push(`${monthlyCount} monthly`);
+      if (yearlyCount > 0) breakdownParts.push(`${yearlyCount} yearly`);
+      if (weeklyCount > 0) breakdownParts.push(`${weeklyCount} weekly`);
+
+      document.getElementById('card-monthly-total').textContent = formatCHF(monthlyTotal);
+      document.getElementById('card-monthly-subtext').textContent = `${breakdownParts.join(' + ')} . normalized`;
+      document.getElementById('card-annual-total').textContent = formatCHF(annualTotal);
+
+      // Update Hero Bar Stats
+      document.getElementById('hero-stat-monthly').textContent = formatCHF(monthlyTotal);
+      document.getElementById('hero-stat-count').textContent = `${String(allSubs.length).padStart(2, '0')} SERVICES`;
+
+      if (allSubs.length > 0) {
+        const sortedByNext = [...allSubs].sort((a, b) => a.next_charge_date.localeCompare(b.next_charge_date));
+        const nextSub = sortedByNext[0];
+        document.getElementById('card-next-price').textContent = formatCHF(nextSub.price);
+        document.getElementById('card-next-subtext').textContent = `${nextSub.service} . ${formatShortDate(nextSub.next_charge_date)}`;
+      }
+
+      // 2. Update Active Count Badge
+      document.getElementById('active-count-pill').textContent = `${allSubs.length} active`;
+
+      // 3. Update Pending Renewals Notice & Bell
+      const pendingSubs = allSubs.filter(s => s.payment_status === 'pending');
+      const bannerEl = document.getElementById('attention-banner');
+      const bannerTextEl = document.getElementById('attention-banner-text');
+      const notifBadge = document.getElementById('nav-notif-badge');
+
+      document.getElementById('hero-stat-pending').textContent = `${String(pendingSubs.length).padStart(2, '0')} PENDING`;
+      notifBadge.textContent = pendingSubs.length;
+
+      if (pendingSubs.length > 0) {
+        bannerEl.classList.remove('hidden');
+        const names = pendingSubs.map(s => s.service).join(' and ');
+        bannerTextEl.textContent = `${pendingSubs.length} renewal${pendingSubs.length > 1 ? 's' : ''} need attention . ${names}`;
+      } else {
+        bannerEl.classList.add('hidden');
+      }
+
+      renderNotificationPopover(pendingSubs);
+
+      // 4. Filter & Sort Rows
+      let filtered = allSubs.filter(sub => {
+        if (!searchVal) return true;
+        return (
+          sub.service.toLowerCase().includes(searchVal) ||
+          sub.category.toLowerCase().includes(searchVal)
+        );
+      });
+
+      if (sortVal === 'next_charge_asc') {
+        filtered.sort((a, b) => a.next_charge_date.localeCompare(b.next_charge_date));
+      } else if (sortVal === 'price_desc') {
+        filtered.sort((a, b) => b.price - a.price);
+      } else if (sortVal === 'price_asc') {
+        filtered.sort((a, b) => a.price - b.price);
+      } else if (sortVal === 'service_asc') {
+        filtered.sort((a, b) => a.service.localeCompare(b.service));
+      }
+
+      // 5. Render Full-Width Sticky Stacking Subscription Cards
+      const listEl = document.getElementById('subscriptions-list');
+      if (filtered.length === 0) {
+        listEl.innerHTML = `
+          <div class="py-12 text-center font-mono text-xs text-muted border border-dashed border-hairline rounded-xl">
+            No subscriptions matching "${escapeHtml(searchVal)}".
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = filtered.map((sub, idx) => {
+        const isPending = sub.payment_status === 'pending';
+        const rowStyleClass = isPending ? 'sub-row-pending' : 'sub-row-paid';
+        const stickyTopPx = 105 + (idx * 14);
+
+        const statusBadge = isPending
+          ? `<span class="status-architectural status-pending">
+               <span class="w-1.5 h-1.5 rounded-full bg-[#B45309]"></span>
+               Pending
+             </span>`
+          : `<span class="status-architectural status-paid">
+               <span class="w-1.5 h-1.5 rounded-full bg-[#0D9467]"></span>
+               Paid
+             </span>`;
+
+        return `
+          <div 
+            class="sub-card-row ${rowStyleClass} rounded-xl border border-hairline px-5 py-4 grid grid-cols-1 md:grid-cols-12 items-center gap-4"
+            style="top: ${stickyTopPx}px; z-index: ${10 + idx};"
+          >
+            <!-- Service Logo & Name -->
+            <div class="md:col-span-4 flex items-center gap-4 relative z-10">
+              ${getBrandSvgLogo(sub.service)}
+              <div>
+                <div class="flex items-center gap-2">
+                  <p class="font-semibold text-obsidian text-base">${escapeHtml(sub.service)}</p>
+                  ${sub.is_custom ? '<span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-alabaster border border-hairline text-muted">Custom</span>' : ''}
+                </div>
+                <p class="text-xs text-muted">${escapeHtml(sub.category)}</p>
+              </div>
+            </div>
+
+            <!-- Billing Period -->
+            <div class="md:col-span-3 font-mono text-xs text-muted relative z-10">
+              <span class="md:hidden uppercase text-[10px] text-obsidian font-semibold mr-2">Period:</span>
+              ${escapeHtml(sub.period_label)}
+            </div>
+
+            <!-- Price -->
+            <div class="md:col-span-2 md:text-right font-mono text-sm sm:text-base font-bold text-obsidian relative z-10">
+              ${formatCHF(sub.price)}
+            </div>
+
+            <!-- Architectural Status Tag -->
+            <div class="md:col-span-2 md:text-center relative z-10">
+              ${statusBadge}
+            </div>
+
+            <!-- Row Action Menu (...) -->
+            <div class="md:col-span-1 text-right relative z-20">
+              <button 
+                onclick="toggleRowMenu(event, ${sub.id})" 
+                class="w-9 h-9 rounded-lg bg-alabaster hover:bg-obsidian border border-hairline inline-flex items-center justify-center text-obsidian hover:text-gold font-mono text-base transition"
+                title="Subscription Actions"
+              >
+                ⋯
+              </button>
+
+              <!-- Dropdown Menu -->
+              <div id="row-menu-${sub.id}" class="hidden absolute right-0 top-11 w-48 rounded-xl bg-white border border-hairline shadow-2xl py-1.5 z-50 text-left">
+                <button onclick="openEditModal(${sub.id})" class="w-full px-4 py-2.5 text-xs text-obsidian hover:bg-alabaster flex items-center gap-2.5 transition">
+                  <span class="font-mono text-gold-dark">✎</span> Edit subscription
+                </button>
+                ${isPending ? `
+                <button onclick="handleMarkAsPaid(${sub.id})" class="w-full px-4 py-2.5 text-xs text-emerald font-semibold hover:bg-emerald-tint flex items-center gap-2.5 transition">
+                  <span class="font-mono">✓</span> Mark as paid
+                </button>
+                ` : ''}
+                <button onclick="handleDeleteSubscription(${sub.id})" class="w-full px-4 py-2.5 text-xs text-crimson hover:bg-crimson-tint flex items-center gap-2.5 transition border-t border-hairline">
+                  <span class="font-mono">✕</span> Delete from list
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function formatShortDate(dateStr) {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    }
+
+    function handleSearchAndSort() {
+      renderDashboard();
+    }
+
+    function syncGlobalSearch(val) {
+      const dashInput = document.getElementById('dashboard-search');
+      if (dashInput) {
+        dashInput.value = val;
+        renderDashboard();
+      }
+    }
+
+
+    /* =====================================================================
+       5. ROW ACTIONS: MARK AS PAID, DELETE, AND EDIT
+    ====================================================================== */
+    function toggleRowMenu(event, id) {
+      event.stopPropagation();
+      document.querySelectorAll('[id^="row-menu-"]').forEach(el => {
+        if (el.id !== `row-menu-${id}`) el.classList.add('hidden');
+      });
+      const menu = document.getElementById(`row-menu-${id}`);
+      if (menu) menu.classList.toggle('hidden');
+    }
+
+    async function handleMarkAsPaid(id) {
+      await ApiService.markPayment(id);
+      await renderDashboard();
+      renderBillingHistory();
+      showToast('Marked as paid (POST /subscriptions/' + id + '/payments)');
+    }
+
+    async function handleDeleteSubscription(id) {
+      const sub = AppState.subscriptions.find(s => s.id === Number(id));
+      await ApiService.deleteSubscription(id);
+      await renderDashboard();
+      showToast(`Removed "${sub ? sub.service : 'subscription'}" from list.`);
+    }
+
+
+    /* =====================================================================
+       6. DRAWER MODAL WORKFLOWS (Add Listed, Add Custom, Edit Subscription)
+    ====================================================================== */
+    function renderServiceCatalog(filterText = '') {
+      const grid = document.getElementById('catalog-grid');
+      const query = filterText.trim().toLowerCase();
+      const items = AppState.catalog.filter(c => c.service.toLowerCase().includes(query));
+
+      grid.innerHTML = items.map(item => `
+        <button 
+          type="button" 
+          onclick="selectCatalogService('${item.service}')"
+          class="p-2.5 rounded-xl bg-alabaster hover:bg-stone border border-hairline hover:border-gold flex items-center gap-2.5 text-left transition"
+        >
+          <div class="scale-75 -ml-1">
+            ${getBrandSvgLogo(item.service)}
+          </div>
+          <div class="overflow-hidden">
+            <p class="text-xs font-semibold text-obsidian truncate">${item.service}</p>
+            <p class="text-[10px] font-mono text-muted">${item.price.toFixed(2)} CHF</p>
+          </div>
+        </button>
+      `).join('');
+    }
+
+    function filterServiceCatalog() {
+      const q = document.getElementById('catalog-search').value;
+      renderServiceCatalog(q);
+    }
+
+    function selectCatalogService(serviceName) {
+      const item = AppState.catalog.find(c => c.service === serviceName);
+      if (!item) return;
+
+      document.getElementById('form-service-name').value = item.service;
+      document.getElementById('form-category').value = item.category;
+      document.getElementById('form-price').value = item.price.toFixed(2);
+      document.getElementById('form-currency').value = 'CHF';
+      document.getElementById('form-period').value = item.period;
+
+      checkDuplicateService(item.service);
+      updateDemoEquivalent();
+    }
+
+    function checkDuplicateService(serviceName) {
+      const mode = document.getElementById('form-mode').value;
+      const warnBox = document.getElementById('duplicate-warning');
+      const warnText = document.getElementById('duplicate-warning-text');
+
+      if (mode === 'edit' || !serviceName.trim()) {
+        warnBox.classList.add('hidden');
+        return;
+      }
+
+      const exists = AppState.subscriptions.some(
+        s => s.service.toLowerCase() === serviceName.trim().toLowerCase()
+      );
+      if (exists) {
+        warnBox.classList.remove('hidden');
+        warnText.textContent = `${serviceName.trim()} already exists in your list. Duplicates are allowed.`;
+      } else {
+        warnBox.classList.add('hidden');
+      }
+    }
+
+    function updateDemoEquivalent() {
+      const rawPrice = parseFloat(document.getElementById('form-price').value) || 0;
+      const currency = document.getElementById('form-currency').value;
+      const period = document.getElementById('form-period').value;
+
+      let rate = 1.0;
+      if (currency === 'USD') rate = 0.80;
+      if (currency === 'EUR') rate = 0.94;
+
+      const chfEquivalent = rawPrice * rate;
+      document.getElementById('form-demo-chf').textContent = `${chfEquivalent.toFixed(2)} CHF`;
+
+      let yearlyChf = chfEquivalent * 12;
+      if (period === 'yearly') yearlyChf = chfEquivalent;
+      if (period === 'weekly') yearlyChf = chfEquivalent * 52;
+      document.getElementById('edit-yearly-amount').textContent = `${yearlyChf.toFixed(2)} CHF`;
+    }
+
+    function updateAutopayCardStyles() {
+      const selected = document.querySelector('input[name="autopay_mode"]:checked')?.value || 'auto';
+      const manualCard = document.getElementById('card-mode-manual');
+      const autoCard = document.getElementById('card-mode-auto');
+
+      if (selected === 'manual') {
+        manualCard.className = 'p-3.5 rounded-lg bg-[#FDF8EE] border border-[#EED6A7] cursor-pointer flex items-start gap-3 transition';
+        autoCard.className = 'p-3.5 rounded-lg bg-alabaster border border-hairline cursor-pointer flex items-start gap-3 transition';
+      } else {
+        manualCard.className = 'p-3.5 rounded-lg bg-alabaster border border-hairline cursor-pointer flex items-start gap-3 transition';
+        autoCard.className = 'p-3.5 rounded-lg bg-emerald-tint border border-emerald/40 cursor-pointer flex items-start gap-3 transition';
+      }
+    }
+
+    function openAddModal(mode = 'listed') {
+      document.getElementById('form-error-box').classList.add('hidden');
+      document.getElementById('form-edit-id').value = '';
+      document.getElementById('btn-drawer-delete').classList.add('hidden');
+      document.getElementById('edit-yearly-box').classList.add('hidden');
+      document.getElementById('edit-selector-section').classList.add('hidden');
+
+      renderServiceCatalog('');
+
+      if (mode === 'custom') {
+        switchDrawerToCustom();
+      } else {
+        document.getElementById('form-mode').value = 'listed';
+        document.getElementById('drawer-eyebrow').textContent = 'SELECT A SERVICE';
+        document.getElementById('drawer-mode-badge').textContent = 'NEW';
+        document.getElementById('drawer-title').textContent = 'ADD A SUBSCRIPTION';
+        document.getElementById('drawer-subtitle').textContent = 'Choose a service, then configure the details you want to track.';
+        document.getElementById('service-picker-section').classList.remove('hidden');
+        document.getElementById('drawer-submit-btn').textContent = '+ Link an App';
+
+        selectCatalogService('Netflix');
+      }
+
+      document.getElementById('drawer-overlay').classList.remove('hidden');
+    }
+
+    function switchDrawerToCustom() {
+      document.getElementById('form-mode').value = 'custom';
+      document.getElementById('drawer-eyebrow').textContent = 'CUSTOM ENTRY';
+      document.getElementById('drawer-mode-badge').textContent = 'CUSTOM';
+      document.getElementById('drawer-title').textContent = 'ADD CUSTOM SUBSCRIPTION';
+      document.getElementById('drawer-subtitle').textContent = 'Create a personal entry with its price, schedule, and renewal alert.';
+      document.getElementById('service-picker-section').classList.add('hidden');
+      document.getElementById('edit-selector-section').classList.add('hidden');
+      document.getElementById('duplicate-warning').classList.add('hidden');
+      document.getElementById('drawer-submit-btn').textContent = '+ Add Subscription';
+
+      document.getElementById('form-service-name').value = 'Gym & wellness';
+      document.getElementById('form-category').value = 'Fitness';
+      document.getElementById('form-period').value = 'yearly';
+      document.getElementById('form-price').value = '79.00';
+      document.getElementById('form-currency').value = 'CHF';
+      updateDemoEquivalent();
+    }
+
+    function openEditModal(id) {
+      const sub = AppState.subscriptions.find(s => s.id === Number(id));
+      if (!sub) return;
+
+      // Populate top switcher so user can switch between any subscription in Edit Mode
+      const picker = document.getElementById('edit-subscription-picker');
+      picker.innerHTML = AppState.subscriptions.map(item => 
+        `<option value="${item.id}" ${item.id === sub.id ? 'selected' : ''}>${escapeHtml(item.service)} (${formatCHF(item.price)} / ${item.billing_period})</option>`
+      ).join('');
+      document.getElementById('edit-selector-section').classList.remove('hidden');
+
+      document.getElementById('form-error-box').classList.add('hidden');
+      document.getElementById('form-mode').value = 'edit';
+      document.getElementById('form-edit-id').value = sub.id;
+
+      document.getElementById('drawer-eyebrow').textContent = 'CONFIGURE PLAN';
+      document.getElementById('drawer-mode-badge').textContent = 'ACTIVE';
+      document.getElementById('drawer-title').textContent = 'EDIT MY SUBSCRIPTIONS';
+      document.getElementById('drawer-subtitle').textContent = 'Review service, billing details, and alerts before saving changes.';
+      document.getElementById('service-picker-section').classList.add('hidden');
+      document.getElementById('duplicate-warning').classList.add('hidden');
+      document.getElementById('edit-yearly-box').classList.remove('hidden');
+      document.getElementById('btn-drawer-delete').classList.remove('hidden');
+      document.getElementById('drawer-submit-btn').textContent = 'Save Changes';
+
+      document.getElementById('form-service-name').value = sub.service;
+      document.getElementById('form-category').value = sub.category.split(' ')[0] || 'Entertainment';
+      document.getElementById('form-price').value = sub.price.toFixed(2);
+      document.getElementById('form-currency').value = 'CHF';
+      document.getElementById('form-period').value = sub.billing_period;
+      document.getElementById('form-start-date').value = sub.start_date;
+      document.getElementById('form-notification').checked = Boolean(sub.notification_enabled);
+
+      const radios = document.querySelectorAll('input[name="autopay_mode"]');
+      radios.forEach(r => {
+        r.checked = (sub.auto_pay && r.value === 'auto') || (!sub.auto_pay && r.value === 'manual');
+      });
+      updateAutopayCardStyles();
+      updateDemoEquivalent();
+
+      document.getElementById('drawer-overlay').classList.remove('hidden');
+    }
+
+    function openEditFirstSubscription() {
+      if (AppState.subscriptions.length > 0) {
+        openEditModal(AppState.subscriptions[0].id);
+      } else {
+        openAddModal('listed');
+      }
+    }
+
+    function closeDrawer() {
+      document.getElementById('drawer-overlay').classList.add('hidden');
+    }
+
+    async function handleFormSubmit(event) {
+      event.preventDefault();
+      const mode = document.getElementById('form-mode').value;
+      const editId = document.getElementById('form-edit-id').value;
+      const service = document.getElementById('form-service-name').value.trim();
+      const category = document.getElementById('form-category').value;
+      const rawPrice = parseFloat(document.getElementById('form-price').value);
+      const currency = document.getElementById('form-currency').value;
+      const billing_period = document.getElementById('form-period').value;
+      const start_date = document.getElementById('form-start-date').value;
+      const notification_enabled = document.getElementById('form-notification').checked;
+      const autopayMode = document.querySelector('input[name="autopay_mode"]:checked')?.value || 'auto';
+
+      const errorBox = document.getElementById('form-error-box');
+
+      if (!service) {
+        errorBox.textContent = '422 Unprocessable Entity: service_name_required';
+        errorBox.classList.remove('hidden');
+        return;
+      }
+      if (isNaN(rawPrice) || rawPrice <= 0) {
+        errorBox.textContent = '422 Unprocessable Entity: price_must_be_positive';
+        errorBox.classList.remove('hidden');
+        return;
+      }
+      if (rawPrice > 100000) {
+        errorBox.textContent = '422 Unprocessable Entity: price_too_high';
+        errorBox.classList.remove('hidden');
+        return;
+      }
+
+      let rate = 1.0;
+      if (currency === 'USD') rate = 0.80;
+      if (currency === 'EUR') rate = 0.94;
+      const finalChfPrice = Math.round(rawPrice * rate * 100) / 100;
+
+      const payload = {
+        service,
+        is_custom: mode === 'custom',
+        category,
+        price: finalChfPrice,
+        currency: 'CHF',
+        billing_period,
+        start_date,
+        auto_pay: autopayMode === 'auto',
+        notification_enabled
+      };
+
+      if (mode === 'edit' && editId) {
+        await ApiService.updateSubscription(editId, payload);
+        showToast(`Updated "${service}" (${formatCHF(finalChfPrice)})`);
+      } else {
+        await ApiService.createSubscription(payload);
+        showToast(`Added "${service}" to your dashboard.`);
+      }
+
+      closeDrawer();
+      await renderDashboard();
+    }
+
+    async function handleDeleteFromDrawer() {
+      const editId = document.getElementById('form-edit-id').value;
+      if (!editId) return;
+      await handleDeleteSubscription(editId);
+      closeDrawer();
+    }
+
+
+    /* =====================================================================
+       7. BILLING HISTORY, CSV EXPORT & SETTINGS
+    ====================================================================== */
+    function renderBillingHistory() {
+      const tbody = document.getElementById('history-tbody');
+      const query = (document.getElementById('history-search')?.value || '').trim().toLowerCase();
+
+      const filtered = AppState.billingHistory.filter(item =>
+        item.service.toLowerCase().includes(query) ||
+        item.category.toLowerCase().includes(query)
+      );
+
+      document.getElementById('history-count-badge').textContent = `${filtered.length} records`;
+
+      tbody.innerHTML = filtered.map(rec => `
+        <tr class="hover:bg-alabaster transition">
+          <td class="py-3.5 px-6">
+            <div class="flex items-center gap-3.5">
+              <div class="scale-90 -ml-1">
+                ${getBrandSvgLogo(rec.service)}
+              </div>
+              <div>
+                <p class="font-semibold text-obsidian text-sm">${escapeHtml(rec.service)}</p>
+                <p class="text-xs text-muted">${escapeHtml(rec.category)} . ${escapeHtml(rec.billing_period)}</p>
+              </div>
+            </div>
+          </td>
+          <td class="py-3.5 px-6">
+            <p class="font-mono text-xs text-obsidian font-medium">${escapeHtml(rec.renewal_date)}</p>
+            <p class="font-mono text-[11px] text-muted">${escapeHtml(rec.period_range)}</p>
+          </td>
+          <td class="py-3.5 px-6 text-right font-mono text-sm font-bold text-obsidian">
+            ${formatCHF(rec.amount)}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function exportHistoryCSV() {
+      const headers = ['Service', 'Category', 'Billing Period', 'Renewal Date', 'Period Range', 'Amount (CHF)'];
+      const rows = AppState.billingHistory.map(r => [
+        `"${r.service}"`,
+        `"${r.category}"`,
+        `"${r.billing_period}"`,
+        `"${r.renewal_date}"`,
+        `"${r.period_range}"`,
+        r.amount.toFixed(2)
+      ]);
+      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', 'payall_subscriptions_oct2025.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Exported payall_subscriptions_oct2025.csv');
+    }
+
+    function saveSettings() {
+      const days = document.getElementById('settings-reminder-days').value;
+      AppState.reminderDays = Number(days);
+      document.getElementById('notif-window-label').textContent = `${days}d window`;
+      showToast(`Settings saved (PATCH /settings . reminder_days: ${days})`);
+    }
+
+
+    /* =====================================================================
+       8. NAVIGATION & SECTION SCROLLING (Dashboard, Settings, About Us)
+    ====================================================================== */
+    function navigateSection(target) {
+      const dashSection = document.getElementById('view-dashboard');
+      const settingsSection = document.getElementById('view-settings');
+      const aboutSection = document.getElementById('about-section');
+      const workspaceAnchor = document.getElementById('workspace-anchor');
+
+      const btnDash = document.getElementById('nav-btn-dashboard');
+      const btnSettings = document.getElementById('nav-btn-settings');
+      const btnAbout = document.getElementById('nav-btn-about');
+
+      [btnDash, btnSettings, btnAbout].forEach(b => b && b.classList.remove('active'));
+
+      if (target === 'settings') {
+        dashSection.classList.add('hidden');
+        settingsSection.classList.remove('hidden');
+        if (btnSettings) btnSettings.classList.add('active');
+        if (workspaceAnchor) workspaceAnchor.scrollIntoView({ behavior: 'smooth' });
+      } else if (target === 'about') {
+        dashSection.classList.remove('hidden');
+        settingsSection.classList.add('hidden');
+        if (btnAbout) btnAbout.classList.add('active');
+        if (aboutSection) aboutSection.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        dashSection.classList.remove('hidden');
+        settingsSection.classList.add('hidden');
+        if (btnDash) btnDash.classList.add('active');
+        if (workspaceAnchor) workspaceAnchor.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    function scrollToHero(e) {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function toggleNotificationPopover() {
+      const pop = document.getElementById('notif-popover');
+      pop.classList.toggle('hidden');
+    }
+
+    function renderNotificationPopover(pendingSubs) {
+      const container = document.getElementById('notif-popover-body');
+      if (pendingSubs.length === 0) {
+        container.innerHTML = `<p class="text-muted font-mono text-xs">All subscriptions are marked paid for the current cycle.</p>`;
+        return;
+      }
+      container.innerHTML = `
+        <div class="p-3 rounded-lg bg-[#FDF8EE] border border-[#EED6A7] text-[#9A5B13]">
+          <p class="font-semibold">Combined Renewal Notice</p>
+          <p class="text-[11px] mt-1">${pendingSubs.length} manual payment(s) pending confirmation: <strong>${pendingSubs.map(s => s.service).join(', ')}</strong>.</p>
+        </div>
+      `;
+    }
+
+    function toggleApiMode() {
+      ApiService.USE_MOCKS = !ApiService.USE_MOCKS;
+      const dot = document.getElementById('api-mode-dot');
+      const label = document.getElementById('api-mode-label');
+
+      if (ApiService.USE_MOCKS) {
+        dot.className = 'w-2 h-2 rounded-full bg-emerald';
+        label.textContent = 'DATA SOURCE: LOCAL MOCK FIXTURES';
+        showToast('Switched to Local Mock Data (USE_MOCKS = true)');
+        renderDashboard();
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-gold animate-ping';
+        label.textContent = 'DATA SOURCE: FASTAPI (127.0.0.1:8000)';
+        showToast('Connecting to FastAPI http://127.0.0.1:8000/subscriptions...');
+        renderDashboard().catch(() => {
+          ApiService.USE_MOCKS = true;
+          dot.className = 'w-2 h-2 rounded-full bg-emerald';
+          label.textContent = 'DATA SOURCE: LOCAL MOCK FIXTURES';
+          showToast('FastAPI server not detected on :8000. Using Local Mock Fixtures.');
+        });
+      }
+    }
+
+    function showToast(message) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'bg-obsidian text-white px-4 py-3 rounded-lg border border-gold/40 text-xs font-mono shadow-2xl flex items-center gap-2.5 pointer-events-auto transition-all duration-300';
+      toast.innerHTML = `<span class="w-2 h-2 rounded-full bg-gold"></span><span>${escapeHtml(message)}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+
+    /* =====================================================================
+       9. INITIALIZATION: PARALLAX HERO, SHUTTER NAVBAR & SCROLL REVEALS
+    ====================================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      renderDashboard();
+      renderBillingHistory();
+
+      const navbar = document.getElementById('main-navbar');
+      const heroSection = document.getElementById('hero-section');
+      const heroBg = document.getElementById('hero-parallax-bg');
+      const heroContent = document.getElementById('hero-content-col');
+
+      window.addEventListener('scroll', () => {
+        const scrollY = window.scrollY;
+
+        // Unveil Translucent Glassmorphic White Shutter Navbar after scrolling past hero intro
+        if (scrollY > 220) {
+          navbar.classList.remove('shutter-hidden');
+          navbar.classList.add('shutter-visible');
+        } else {
+          navbar.classList.remove('shutter-visible');
+          navbar.classList.add('shutter-hidden');
+        }
+
+        // Gentle Sticky Hero Camera-Blur, Scale-Down & Fade Transition (After 180px buffer)
+        if (scrollY < window.innerHeight * 1.3) {
+          const fadeProgress = Math.min(1, Math.max(0, (scrollY - 180) / 620));
+          const heroScale = 1 - (fadeProgress * 0.04); // Gently scales down to 0.96
+          const heroBlur = fadeProgress * 14;          // Progressive camera blur up to 14px
+          const heroOpacity = Math.max(0.15, 1 - (fadeProgress * 0.85));
+
+          if (heroSection) {
+            heroSection.style.transform = `scale(${heroScale})`;
+            heroSection.style.filter = `blur(${heroBlur.toFixed(1)}px)`;
+            heroSection.style.opacity = `${heroOpacity}`;
+          }
+          if (heroBg) {
+            heroBg.style.transform = `scale(1.06) translateY(${scrollY * 0.22}px)`;
+          }
+          if (heroContent) {
+            heroContent.style.transform = `translateY(${scrollY * 0.1}px)`;
+          }
+        }
+      }, { passive: true });
+
+      // Scroll-Driven Fade Reveals
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+          }
+        });
+      }, { threshold: 0.12 });
+
+      document.querySelectorAll('.reveal-on-scroll, .story-reveal-left, .story-reveal-right').forEach(el => observer.observe(el));
+
+      // Escape key closes drawer
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeDrawer();
+      });
+
+      // Close row menus when clicking outside
+      window.addEventListener('click', () => {
+        document.querySelectorAll('[id^="row-menu-"]').forEach(el => el.classList.add('hidden'));
+      });
+    });
+  </script>
+</body>
+</html>
