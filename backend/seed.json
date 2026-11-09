@@ -21,10 +21,26 @@
   "subscriptions": [
     {
       "id": 1,
-      "user_id": 1,
       "service": "Netflix",
+      "category": "Entertainment"
+    },
+    {
+      "id": 2,
+      "service": "SBB Halbtax",
+      "category": "Transport"
+    },
+    {
+      "id": 3,
+      "service": "Spotify",
+      "category": "Music"
+    }
+  ],
+  "user_subscriptions": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "subscription_id": 1,
       "is_custom": false,
-      "category": "Entertainment",
       "price": 18.9,
       "currency": "CHF",
       "billing_period": "monthly",
@@ -37,9 +53,8 @@
     {
       "id": 2,
       "user_id": 1,
-      "service": "SBB Halbtax",
+      "subscription_id": 2,
       "is_custom": false,
-      "category": "Transport",
       "price": 190.0,
       "currency": "CHF",
       "billing_period": "yearly",
@@ -51,9 +66,8 @@
     {
       "id": 3,
       "user_id": 1,
-      "service": "Spotify",
+      "subscription_id": 3,
       "is_custom": false,
-      "category": "Music",
       "price": 14.95,
       "currency": "CHF",
       "billing_period": "monthly",

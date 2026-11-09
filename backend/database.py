@@ -66,16 +66,22 @@ def initialise(engine):
         session.add_all([Category(name=name) for name in seed["categories"]])
         session.flush()
         categories = {category.name: category.id for category in session.exec(select(Category)).all()}
-        subscriptions = []
+        subscription_rows = []
         for row in seed["subscriptions"]:
-            service = row.pop("service")
-            category_id = categories[row.pop("category")]
-            session.add(Subscription(id=row["id"], service=service, category_id=str(category_id)))
+            subscription_rows.append(
+                Subscription(
+                    id=row["id"],
+                    service=row["service"],
+                    category_id=str(categories[row["category"]]),
+                )
+            )
+        session.add_all(subscription_rows)
+        user_subscriptions = []
+        for row in seed["user_subscriptions"]:
             row["start_date"] = date.fromisoformat(row["start_date"])
             row["tracked_since"] = date.fromisoformat(row["tracked_since"])
             if row.get("auto_pay_since") is not None:
                 row["auto_pay_since"] = date.fromisoformat(row["auto_pay_since"])
-            row["subscription_id"] = row["id"]
             row["price_rappen"] = int(Decimal(str(row.pop("price"))) * 100)
-            subscriptions.append(UserSubscription(**row))
-        session.add_all(subscriptions)
+            user_subscriptions.append(UserSubscription(**row))
+        session.add_all(user_subscriptions)
