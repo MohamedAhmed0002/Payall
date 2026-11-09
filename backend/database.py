@@ -6,7 +6,7 @@ from pathlib import Path
 from sqlalchemy import event, inspect
 from sqlmodel import Session, SQLModel, create_engine, select
 
-from models import Category, Subscription, User
+from models import Category, UserSubscription, User
 
 
 def make_engine(database_file: Path, *, echo: bool = False):
@@ -27,7 +27,11 @@ def make_engine(database_file: Path, *, echo: bool = False):
 
 
 def initialise(engine):
-    new_schema = not inspect(engine).has_table("user")
+    inspector = inspect(engine)
+    new_schema = not inspector.has_table("user")
+    if inspector.has_table("subscription") and not inspector.has_table("usersubscription"):
+        with engine.begin() as connection:
+            connection.exec_driver_sql("ALTER TABLE subscription RENAME TO usersubscription")
     SQLModel.metadata.create_all(engine)
     if not new_schema:
         return
@@ -49,5 +53,5 @@ def initialise(engine):
                 row["auto_pay_since"] = date.fromisoformat(row["auto_pay_since"])
             row["category_id"] = categories[row.pop("category")]
             row["price_rappen"] = int(Decimal(str(row.pop("price"))) * 100)
-            subscriptions.append(Subscription(**row))
+            subscriptions.append(UserSubscription(**row))
         session.add_all(subscriptions)

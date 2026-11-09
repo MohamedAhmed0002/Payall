@@ -16,7 +16,7 @@ from models import (
     NotificationOutput,
     SettingsOutput,
     SettingsUpdate,
-    Subscription,
+    UserSubscription,
     SubscriptionInput,
     SubscriptionList,
     SubscriptionOutput,
@@ -49,7 +49,7 @@ def _period_date(start_date: date, billing_period: str, periods: int) -> date:
     return _add_months(start_date, periods * (1 if billing_period == "monthly" else 12))
 
 
-def charge_dates(subscription: Subscription, until: date) -> list[date]:
+def charge_dates(subscription: UserSubscription, until: date) -> list[date]:
     if subscription.start_date > until:
         return []
     dates = []
@@ -96,11 +96,11 @@ def _one_year_after(value: date) -> date:
         return value.replace(year=value.year + 1, day=28)
 
 
-def get_own_subscription(session: Session, subscription_id: int) -> Subscription:
+def get_own_subscription(session: Session, subscription_id: int) -> UserSubscription:
     subscription = session.exec(
-        select(Subscription).where(
-            Subscription.id == subscription_id,
-            Subscription.user_id == CURRENT_USER_ID,
+        select(UserSubscription).where(
+            UserSubscription.id == subscription_id,
+            UserSubscription.user_id == CURRENT_USER_ID,
         )
     ).first()
     if subscription is None:
@@ -111,9 +111,9 @@ def get_own_subscription(session: Session, subscription_id: int) -> Subscription
 def record_due_autopay_payments(session: Session, today: date) -> None:
     """Mock replacement for a payment provider or nightly job: an automatic payment is assumed to succeed on its charge date."""
     subscriptions = session.exec(
-        select(Subscription).where(
-            Subscription.user_id == CURRENT_USER_ID,
-            Subscription.auto_pay,
+        select(UserSubscription).where(
+            UserSubscription.user_id == CURRENT_USER_ID,
+            UserSubscription.auto_pay,
         )
     ).all()
     changed = False
@@ -144,12 +144,12 @@ def record_due_autopay_payments(session: Session, today: date) -> None:
         session.commit()
 
 
-def _period_start(subscription: Subscription, today: date) -> date | None:
+def _period_start(subscription: UserSubscription, today: date) -> date | None:
     dates = charge_dates(subscription, today)
     return dates[-1] if dates else None
 
 
-def _payment_status(session: Session, subscription: Subscription, today: date) -> str:
+def _payment_status(session: Session, subscription: UserSubscription, today: date) -> str:
     period_start = _period_start(subscription, today)
     if period_start is not None and period_start < subscription.tracked_since:
         return "paid"
@@ -167,7 +167,7 @@ def _payment_status(session: Session, subscription: Subscription, today: date) -
     return "paid" if payment else "pending"
 
 
-def _to_output(session: Session, subscription: Subscription, today: date) -> SubscriptionOutput:
+def _to_output(session: Session, subscription: UserSubscription, today: date) -> SubscriptionOutput:
     category = session.get(Category, subscription.category_id)
     if category is None:
         raise PayallError("category_not_found", "category_id")
@@ -214,7 +214,7 @@ def create_subscription(session: Session, payload: SubscriptionInput, today: dat
         raise PayallError("start_date_out_of_range", "start_date")
     if session.get(Category, payload.category_id) is None:
         raise PayallError("category_not_found", "category_id")
-    subscription = Subscription(
+    subscription = UserSubscription(
         user_id=CURRENT_USER_ID,
         service=service,
         is_custom=payload.is_custom,
@@ -271,12 +271,12 @@ def list_notifications(session: Session, today: date) -> NotificationOutput:
     record_due_autopay_payments(session, today)
     settings = read_settings(session)
     subscriptions = session.exec(
-        select(Subscription)
+        select(UserSubscription)
         .where(
-            Subscription.user_id == CURRENT_USER_ID,
-            Subscription.notification_enabled,
+            UserSubscription.user_id == CURRENT_USER_ID,
+            UserSubscription.notification_enabled,
         )
-        .order_by(Subscription.id)
+        .order_by(UserSubscription.id)
     ).all()
     items = []
     for subscription in subscriptions:
@@ -324,9 +324,9 @@ def list_history(session: Session, event_type: str | None, today: date) -> Histo
     history = []
     if event_type in (None, "payment"):
         rows = session.exec(
-            select(Payment, Subscription)
-            .join(Subscription, Payment.subscription_id == Subscription.id)
-            .where(Subscription.user_id == CURRENT_USER_ID)
+            select(Payment, UserSubscription)
+            .join(UserSubscription, Payment.subscription_id == UserSubscription.id)
+            .where(UserSubscription.user_id == CURRENT_USER_ID)
         ).all()
         history.extend(
             (
@@ -345,9 +345,9 @@ def list_history(session: Session, event_type: str | None, today: date) -> Histo
         )
     if event_type in (None, "cancellation"):
         subscriptions = session.exec(
-            select(Subscription).where(
-                Subscription.user_id == CURRENT_USER_ID,
-                Subscription.cancelled_at.is_not(None),
+            select(UserSubscription).where(
+                UserSubscription.user_id == CURRENT_USER_ID,
+                UserSubscription.cancelled_at.is_not(None),
             )
         ).all()
         history.extend(
@@ -381,9 +381,9 @@ def list_subscriptions(
     if len(cleaned_search) > 100:
         raise PayallError("invalid_input", "search")
     query = (
-        select(Subscription)
-        .join(Category, Subscription.category_id == Category.id)
-        .where(Subscription.user_id == CURRENT_USER_ID)
+        select(UserSubscription)
+        .join(Category, UserSubscription.category_id == Category.id)
+        .where(UserSubscription.user_id == CURRENT_USER_ID)
     )
     if cleaned_search:
         escaped_search = (
@@ -394,22 +394,22 @@ def list_subscriptions(
         )
         pattern = f"%{escaped_search}%"
         query = query.where(
-            (func.lower(Subscription.service).like(pattern, escape="\\"))
+            (func.lower(UserSubscription.service).like(pattern, escape="\\"))
             | (func.lower(Category.name).like(pattern, escape="\\"))
         )
     if sort == "price":
-        primary = Subscription.price_rappen.desc() if order == "desc" else Subscription.price_rappen.asc()
-        query = query.order_by(primary, Subscription.id.asc())
+        primary = UserSubscription.price_rappen.desc() if order == "desc" else UserSubscription.price_rappen.asc()
+        query = query.order_by(primary, UserSubscription.id.asc())
     elif sort == "service":
-        primary = func.lower(Subscription.service).desc() if order == "desc" else func.lower(Subscription.service).asc()
-        query = query.order_by(primary, Subscription.id.asc())
+        primary = func.lower(UserSubscription.service).desc() if order == "desc" else func.lower(UserSubscription.service).asc()
+        query = query.order_by(primary, UserSubscription.id.asc())
     else:
-        primary = Subscription.id.desc() if order == "desc" else Subscription.id.asc()
+        primary = UserSubscription.id.desc() if order == "desc" else UserSubscription.id.asc()
         query = query.order_by(primary)
     all_subscriptions = session.exec(query).all()
     outputs = [_to_output(session, item, today) for item in all_subscriptions]
     visible = [_to_output(session, item, today) for item in session.exec(
-        select(Subscription).where(Subscription.user_id == CURRENT_USER_ID).order_by(Subscription.id)
+        select(UserSubscription).where(UserSubscription.user_id == CURRENT_USER_ID).order_by(UserSubscription.id)
     ).all()]
     visible = [item for item in visible if item.status != "ended"]
     subscriptions = [item for item in outputs if item.status != "ended"]

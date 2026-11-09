@@ -22,8 +22,8 @@ class User(SQLModel, table=True):
     created_at: datetime
 
 
-class Subscription(SQLModel, table=True):
-    __tablename__ = "subscription"
+class UserSubscription(SQLModel, table=True):
+    __tablename__ = "usersubscription"
     __table_args__ = (
         CheckConstraint("price_rappen > 0"),
         CheckConstraint("billing_period IN ('weekly', 'monthly', 'yearly')"),
@@ -57,7 +57,7 @@ class Payment(SQLModel, table=True):
     )
 
     id: int | None = Field(default=None, primary_key=True)
-    subscription_id: int = Field(foreign_key="subscription.id", index=True)
+    subscription_id: int = Field(foreign_key="usersubscription.id", index=True)
     period_start: date
     amount_rappen: int
     paid_on: date

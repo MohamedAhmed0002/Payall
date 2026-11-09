@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from database import initialise, make_engine
 from main import create_app
-from models import Subscription, SubscriptionUpdate
+from models import UserSubscription, SubscriptionUpdate
 from service import edit_subscription, list_subscriptions, next_charge_date
 
 
@@ -101,7 +101,7 @@ def test_rappen_round_trip(tmp_path):
         assert response.json()["price"] == 18.9
         engine = client.app.state.engine
         with Session(engine) as session:
-            assert session.exec(select(Subscription).where(Subscription.id == 4)).one().price_rappen == 1890
+            assert session.exec(select(UserSubscription).where(UserSubscription.id == 4)).one().price_rappen == 1890
 
 
 def test_rejects_price_with_more_than_two_decimals(tmp_path):
@@ -153,7 +153,7 @@ def test_edit_subscription_plan_change_starts_at_next_charge(tmp_path):
     engine = make_engine(tmp_path / "payall.sqlite")
     initialise(engine)
     with Session(engine) as session:
-        subscription = Subscription(
+        subscription = UserSubscription(
             user_id=1,
             service="Monthly",
             is_custom=False,
