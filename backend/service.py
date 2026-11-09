@@ -16,6 +16,7 @@ from models import (
     NotificationOutput,
     SettingsOutput,
     SettingsUpdate,
+    Subscription,
     UserSubscription,
     SubscriptionInput,
     SubscriptionList,
@@ -167,8 +168,16 @@ def _payment_status(session: Session, subscription: UserSubscription, today: dat
     return "paid" if payment else "pending"
 
 
+def _subscription_details(session: Session, subscription: UserSubscription) -> Subscription:
+    details = session.get(Subscription, subscription.subscription_id)
+    if details is None:
+        raise PayallError("subscription_not_found", "id", status=404)
+    return details
+
+
 def _to_output(session: Session, subscription: UserSubscription, today: date) -> SubscriptionOutput:
-    category = session.get(Category, subscription.category_id)
+    details = _subscription_details(session, subscription)
+    category = session.get(Category, int(details.category_id))
     if category is None:
         raise PayallError("category_not_found", "category_id")
     next_date = None
@@ -181,9 +190,9 @@ def _to_output(session: Session, subscription: UserSubscription, today: date) ->
     return SubscriptionOutput(
         id=subscription.id,
         user_id=subscription.user_id,
-        service=subscription.service,
+        service=details.service,
         is_custom=subscription.is_custom,
-        category_id=subscription.category_id,
+        category_id=int(details.category_id),
         category=category.name,
         price=from_rappen(subscription.price_rappen),
         currency=subscription.currency,
@@ -214,11 +223,13 @@ def create_subscription(session: Session, payload: SubscriptionInput, today: dat
         raise PayallError("start_date_out_of_range", "start_date")
     if session.get(Category, payload.category_id) is None:
         raise PayallError("category_not_found", "category_id")
+    details = Subscription(service=service, category_id=str(payload.category_id))
+    session.add(details)
+    session.flush()
     subscription = UserSubscription(
         user_id=CURRENT_USER_ID,
-        service=service,
+        subscription_id=details.id,
         is_custom=payload.is_custom,
-        category_id=payload.category_id,
         price_rappen=to_rappen(payload.price),
         currency=payload.currency,
         billing_period=payload.billing_period,
@@ -294,7 +305,7 @@ def list_notifications(session: Session, today: date) -> NotificationOutput:
             items.append(
                 NotificationItem(
                     subscription_id=subscription.id,
-                    service=subscription.service,
+                    service=_subscription_details(session, subscription).service,
                     reason="payment_pending",
                     date=period_start,
                 )
@@ -303,7 +314,7 @@ def list_notifications(session: Session, today: date) -> NotificationOutput:
             items.append(
                 NotificationItem(
                     subscription_id=subscription.id,
-                    service=subscription.service,
+                    service=_subscription_details(session, subscription).service,
                     reason="upcoming_charge",
                     date=output.next_charge_date,
                 )
@@ -336,7 +347,7 @@ def list_history(session: Session, event_type: str | None, today: date) -> Histo
                     type="payment",
                     date=payment.paid_on,
                     subscription_id=subscription.id,
-                    service=subscription.service,
+                    service=_subscription_details(session, subscription).service,
                     amount=from_rappen(payment.amount_rappen),
                     method=payment.method,
                 ),
@@ -358,7 +369,7 @@ def list_history(session: Session, event_type: str | None, today: date) -> Histo
                     type="cancellation",
                     date=subscription.cancelled_at,
                     subscription_id=subscription.id,
-                    service=subscription.service,
+                    service=_subscription_details(session, subscription).service,
                     ends_on=subscription.ends_on,
                 ),
             )
@@ -382,7 +393,8 @@ def list_subscriptions(
         raise PayallError("invalid_input", "search")
     query = (
         select(UserSubscription)
-        .join(Category, UserSubscription.category_id == Category.id)
+        .join(Subscription, UserSubscription.subscription_id == Subscription.id)
+        .join(Category, Subscription.category_id == Category.id)
         .where(UserSubscription.user_id == CURRENT_USER_ID)
     )
     if cleaned_search:
@@ -394,14 +406,14 @@ def list_subscriptions(
         )
         pattern = f"%{escaped_search}%"
         query = query.where(
-            (func.lower(UserSubscription.service).like(pattern, escape="\\"))
+            (func.lower(Subscription.service).like(pattern, escape="\\"))
             | (func.lower(Category.name).like(pattern, escape="\\"))
         )
     if sort == "price":
         primary = UserSubscription.price_rappen.desc() if order == "desc" else UserSubscription.price_rappen.asc()
         query = query.order_by(primary, UserSubscription.id.asc())
     elif sort == "service":
-        primary = func.lower(UserSubscription.service).desc() if order == "desc" else func.lower(UserSubscription.service).asc()
+        primary = func.lower(Subscription.service).desc() if order == "desc" else func.lower(Subscription.service).asc()
         query = query.order_by(primary, UserSubscription.id.asc())
     else:
         primary = UserSubscription.id.desc() if order == "desc" else UserSubscription.id.asc()
@@ -462,6 +474,11 @@ def edit_subscription(session: Session, subscription_id: int, payload: Subscript
         updates["category_id"] is None or session.get(Category, updates["category_id"]) is None
     ):
         raise PayallError("category_not_found", "category_id")
+    details = _subscription_details(session, subscription)
+    if "service" in updates:
+        details.service = updates.pop("service")
+    if "category_id" in updates:
+        details.category_id = str(updates.pop("category_id"))
     if "price" in updates:
         updates["price_rappen"] = to_rappen(updates.pop("price"))
     if "billing_period" in updates and updates["billing_period"] != subscription.billing_period:
@@ -474,6 +491,7 @@ def edit_subscription(session: Session, subscription_id: int, payload: Subscript
             if field in client_fields and value is None:
                 raise PayallError("invalid_input", field)
             setattr(subscription, field, value)
+        session.add(details)
         session.add(subscription)
         session.commit()
         session.refresh(subscription)
@@ -518,7 +536,7 @@ def mark_subscription_paid(session: Session, subscription_id: int, today: date) 
         return PaymentOutput(
             id=payment.id,
             subscription_id=subscription.id,
-            service=subscription.service,
+            service=_subscription_details(session, subscription).service,
             period_start=payment.period_start,
             amount=from_rappen(payment.amount_rappen),
             paid_on=payment.paid_on,

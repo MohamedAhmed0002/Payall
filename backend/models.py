@@ -32,9 +32,8 @@ class UserSubscription(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", index=True)
-    service: str
+    subscription_id: int = Field(foreign_key="subscription.id", index=True)
     is_custom: bool
-    category_id: int = Field(foreign_key="category.id", index=True)
     price_rappen: int
     currency: str
     billing_period: str
@@ -45,6 +44,14 @@ class UserSubscription(SQLModel, table=True):
     cancelled_at: date | None = None
     ends_on: date | None = None
     notification_enabled: bool
+
+
+class Subscription(SQLModel, table=True):
+    __tablename__ = "subscription"
+
+    id: int | None = Field(default=None, primary_key=True)
+    service: str
+    category_id: str = Field(foreign_key="category.id", index=True)
 
 
 class Payment(SQLModel, table=True):

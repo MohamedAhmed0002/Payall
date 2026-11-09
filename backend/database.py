@@ -6,7 +6,7 @@ from pathlib import Path
 from sqlalchemy import event, inspect
 from sqlmodel import Session, SQLModel, create_engine, select
 
-from models import Category, UserSubscription, User
+from models import Category, Subscription, User, UserSubscription
 
 
 def make_engine(database_file: Path, *, echo: bool = False):
@@ -33,6 +33,27 @@ def initialise(engine):
         with engine.begin() as connection:
             connection.exec_driver_sql("ALTER TABLE subscription RENAME TO usersubscription")
     SQLModel.metadata.create_all(engine)
+    inspector = inspect(engine)
+    user_subscription_columns = {
+        column["name"] for column in inspector.get_columns("usersubscription")
+    }
+    if "subscription_id" not in user_subscription_columns and {"service", "category_id"} <= user_subscription_columns:
+        with engine.begin() as connection:
+            connection.exec_driver_sql(
+                "ALTER TABLE usersubscription ADD COLUMN subscription_id INTEGER REFERENCES subscription(id)"
+            )
+            rows = connection.exec_driver_sql(
+                "SELECT id, service, category_id FROM usersubscription"
+            ).fetchall()
+            for subscription_id, service, category_id in rows:
+                connection.exec_driver_sql(
+                    "INSERT OR IGNORE INTO subscription (id, service, category_id) VALUES (?, ?, ?)",
+                    (subscription_id, service, str(category_id)),
+                )
+                connection.exec_driver_sql(
+                    "UPDATE usersubscription SET subscription_id = ? WHERE id = ?",
+                    (subscription_id, subscription_id),
+                )
     if not new_schema:
         return
 
@@ -47,11 +68,14 @@ def initialise(engine):
         categories = {category.name: category.id for category in session.exec(select(Category)).all()}
         subscriptions = []
         for row in seed["subscriptions"]:
+            service = row.pop("service")
+            category_id = categories[row.pop("category")]
+            session.add(Subscription(id=row["id"], service=service, category_id=str(category_id)))
             row["start_date"] = date.fromisoformat(row["start_date"])
             row["tracked_since"] = date.fromisoformat(row["tracked_since"])
             if row.get("auto_pay_since") is not None:
                 row["auto_pay_since"] = date.fromisoformat(row["auto_pay_since"])
-            row["category_id"] = categories[row.pop("category")]
+            row["subscription_id"] = row["id"]
             row["price_rappen"] = int(Decimal(str(row.pop("price"))) * 100)
             subscriptions.append(UserSubscription(**row))
         session.add_all(subscriptions)

@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from database import initialise, make_engine
 from main import create_app
-from models import UserSubscription, SubscriptionUpdate
+from models import Subscription, SubscriptionUpdate, UserSubscription
 from service import edit_subscription, list_subscriptions, next_charge_date
 
 
@@ -153,11 +153,13 @@ def test_edit_subscription_plan_change_starts_at_next_charge(tmp_path):
     engine = make_engine(tmp_path / "payall.sqlite")
     initialise(engine)
     with Session(engine) as session:
+        details = Subscription(service="Monthly", category_id="1")
+        session.add(details)
+        session.flush()
         subscription = UserSubscription(
             user_id=1,
-            service="Monthly",
+            subscription_id=details.id,
             is_custom=False,
-            category_id=1,
             price_rappen=1000,
             currency="CHF",
             billing_period="monthly",
