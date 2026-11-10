@@ -131,8 +131,8 @@ Opened from *Add a subscription* via **Add custom**, for services that are not i
 The main domain concepts are a **user** and the user's **subscriptions**. A user owns
 subscriptions, and each subscription records the service, category, price, currency,
 billing frequency, next renewal date, payment status and notification preference shown
-on the dashboard. A custom subscription uses the same structure as a listed service and
-sets `is_custom` to `true`. The
+on the dashboard. New subscriptions use the same request structure as listed services
+and store their service name directly in `usersubscription`. The
 following examples use fictional user data and realistic Swiss prices as of the design
 draft; they are not connected to real accounts.
 
@@ -161,7 +161,6 @@ The examples below use `1`, `2`, and `3`, matching the implemented system.
     "id": 1,
     "user_id": 1,
     "service": "Netflix",
-    "is_custom": false,
     "category_id": 1,
     "category": "Entertainment",
     "price": 18.90,
@@ -177,7 +176,6 @@ The examples below use `1`, `2`, and `3`, matching the implemented system.
     "id": 2,
     "user_id": 1,
     "service": "SBB Halbtax",
-    "is_custom": false,
     "category_id": 3,
     "category": "Transport",
     "price": 190.00,
@@ -193,7 +191,6 @@ The examples below use `1`, `2`, and `3`, matching the implemented system.
     "id": 3,
     "user_id": 1,
     "service": "Spotify",
-    "is_custom": false,
     "category_id": 2,
     "category": "Music",
     "price": 14.95,
@@ -232,8 +229,8 @@ deleting removes the subscription and its payments. The monthly total excludes
 cancelled subscriptions. Periods that started before a subscription was added to Payall
 count as paid; Payall tracks payments from that day on. Service names are limited to
 100 characters, prices to CHF 100000.00, and start dates must be between 2000-01-01
-and one year after today. A custom subscription uses `POST /subscriptions` with
-`is_custom: true`.
+and one year after today. New subscriptions store their service name directly on
+`usersubscription`; they do not create a row in the catalog `subscription` table.
 The API returns only the authenticated user's subscriptions. Search and sorting are
 handled by query parameters, and notification activation is updated through the same
 partial-update operation as other editable fields.
@@ -246,11 +243,10 @@ outside this milestone.
 |---|---|---|---|---|---|---|
 | Log in | `POST` | `/login` | `{ "email": "lena.mueller@example.com", "password": "example-password" }` | `200 OK` — `{ "access_token": "<token>", "user": { "id": 1, "email": "lena.mueller@example.com" } }` | `401 Unauthorized` — `{ "error": "invalid_credentials" }` | How long should the bearer token remain valid, and do we need logout or refresh-token operations? |
 | See, search and sort subscriptions | `GET` | `/subscriptions?search=netflix&sort=next_charge_date&order=asc` | Optional parameters: `search` (case-insensitive substring of service or category), `sort` (`next_charge_date`, `price`, `service`) and `order` (`asc`, `desc`). | `200 OK` — `{ "subscriptions": [ ... ], "monthly_total": 49.68, "currency": "CHF", "cancelled_excluded": 0 }` | `422 Unprocessable Entity` — `{ "error": "invalid_input", "field": "sort" }` | Search is case-insensitive and matches the service or category name. No pagination: a personal subscription list stays short. The monthly total always includes all active subscriptions. |
-| Add a listed subscription | `POST` | `/subscriptions` | `{ "service": "Netflix", "is_custom": false, "category_id": 1, "price": 18.90, "currency": "CHF", "billing_period": "monthly", "start_date": "2025-09-12", "auto_pay": true, "notification_enabled": true }` | `201 Created` — new subscription object with its `id`, `next_charge_date` and calculated `payment_status` | `422 Unprocessable Entity` — `{ "error": "price_must_be_positive", "field": "price" }`, `{ "error": "price_too_high", "field": "price" }`, `{ "error": "service_name_too_long", "field": "service" }`, `{ "error": "start_date_out_of_range", "field": "start_date" }`, or `{ "error": "category_not_found", "field": "category_id" }` | Which additional currencies should be supported later? |
-| Add a custom subscription | `POST` | `/subscriptions` | `{ "service": "Local Gym", "is_custom": true, "category_id": 4, "price": 45.00, "currency": "CHF", "billing_period": "monthly", "start_date": "2025-09-12", "auto_pay": false, "notification_enabled": false }` | `201 Created` — new subscription object with `is_custom: true` and calculated `payment_status` | `422 Unprocessable Entity` — `{ "error": "service_name_required", "field": "service" }` or `{ "error": "category_not_found", "field": "category_id" }` | Categories come from the fixed category list. |
+| Add a subscription | `POST` | `/subscriptions` | `{ "service": "Local Gym", "category_id": 4, "price": 45.00, "currency": "CHF", "billing_period": "monthly", "start_date": "2025-09-12", "auto_pay": false, "notification_enabled": false }` | `201 Created` — new user subscription object with its `id`, `next_charge_date` and calculated `payment_status`; the service is stored in `usersubscription.service_name` | `422 Unprocessable Entity` — `{ "error": "price_must_be_positive", "field": "price" }`, `{ "error": "price_too_high", "field": "price" }`, `{ "error": "service_name_too_long", "field": "service" }`, `{ "error": "start_date_out_of_range", "field": "start_date" }`, or `{ "error": "category_not_found", "field": "category_id" }` | Categories come from the fixed category list. |
 | Read one subscription | `GET` | `/subscriptions/{id}` | No request body. Example path: `/subscriptions/1` | `200 OK` — subscription object | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` | – |
 | List categories | `GET` | `/categories` | No request body | `200 OK` — ordered list of `{ "id": 1, "name": "Entertainment" }` objects | – | The frontend uses this list for the category dropdown. |
-| Change a subscription or activate its notification | `PATCH` | `/subscriptions/{id}` | `{ "price": 19.90, "category_id": 5, "notification_enabled": true }` | `200 OK` — updated subscription object. `is_custom` cannot be changed; changing `billing_period` restarts the period from the next charge date. | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }`, `409 Conflict` — `{ "error": "subscription_cancelled", "field": "id" }`, or `422 Unprocessable Entity` — `{ "error": "price_too_high", "field": "price" }`, `{ "error": "service_name_too_long", "field": "service" }`, `{ "error": "start_date_out_of_range", "field": "start_date" }` | Reminder timing: default 7 days, changed in `/settings` |
+| Change a subscription or activate its notification | `PATCH` | `/subscriptions/{id}` | `{ "price": 19.90, "category_id": 5, "notification_enabled": true }` | `200 OK` — updated subscription object; changing `billing_period` restarts the period from the next charge date. | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }`, `409 Conflict` — `{ "error": "subscription_cancelled", "field": "id" }`, or `422 Unprocessable Entity` — `{ "error": "price_too_high", "field": "price" }`, `{ "error": "service_name_too_long", "field": "service" }`, `{ "error": "start_date_out_of_range", "field": "start_date" }` | Reminder timing: default 7 days, changed in `/settings` |
 | Mark a manual payment | `POST` | `/subscriptions/{id}/payments` | No request body | `201 Created` — payment object | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` or `409 Conflict` — `{ "error": "auto_pay_subscription", "field": "auto_pay" }` / `{ "error": "nothing_due", "field": "start_date" }` / `{ "error": "already_paid", "field": "id" }` | – |
 | Cancel a subscription | `POST` | `/subscriptions/{id}/cancel` | No request body | `200 OK` — cancelled subscription object | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` or `409 Conflict` — `{ "error": "already_cancelled", "field": "id" }` | – |
 | Remove a subscription | `DELETE` | `/subscriptions/{id}` | No request body. Example path: `/subscriptions/1` | `204 No Content` | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` | Deletion is permanent and also removes the subscription's payments; use cancel to keep the history. |
@@ -292,8 +288,9 @@ In code, we use the ORM **SQLModel** (built on SQLAlchemy), following the
 |---|---|---|
 | `user` | `id`, `name`, `email`, `currency`, `reminder_days`, `created_at` | One user has many subscriptions |
 | `category` | `id`, `name` | Fixed unique category list |
-| `subscription` | `id`, `user_id`, `service`, `is_custom`, `category_id`, `price_rappen`, `currency`, `billing_period`, `start_date`, `tracked_since`, `auto_pay`, `auto_pay_since`, `cancelled_at`, `ends_on`, `notification_enabled` | `user_id` → `user.id`; `category_id` → `category.id` (foreign keys) |
-| `payment` | `id`, `subscription_id`, `period_start`, `amount_rappen`, `paid_on`, `method` | `subscription_id` → `subscription.id` |
+| `subscription` | `id`, `service`, `category_id` | Catalog/details row; `category_id` → `category.id` |
+| `usersubscription` | `id`, `user_id`, `subscription_id`, `service_name`, `category_id`, `price_rappen`, `currency`, `billing_period`, `start_date`, `tracked_since`, `auto_pay`, `auto_pay_since`, `cancelled_at`, `ends_on`, `notification_enabled` | User-owned subscription; `user_id` → `user.id`, optional `subscription_id` → `subscription.id`, `category_id` → `category.id` |
+| `payment` | `id`, `subscription_id`, `period_start`, `amount_rappen`, `paid_on`, `method` | `subscription_id` → `usersubscription.id` |
 
 `next_charge_date` is not stored; the API calculates it from `start_date` and
 `billing_period` on every request, so it never goes out of date.

@@ -32,8 +32,9 @@ class UserSubscription(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", index=True)
-    subscription_id: int = Field(foreign_key="subscription.id", index=True)
-    is_custom: bool
+    subscription_id: int | None = Field(default=None, foreign_key="subscription.id", index=True)
+    service_name: str | None = None
+    category_id: int | None = Field(default=None, foreign_key="category.id", index=True)
     price_rappen: int
     currency: str
     billing_period: str
@@ -83,7 +84,6 @@ class SubscriptionInput(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     service: str
-    is_custom: bool = False
     category_id: int
     price: Decimal
     currency: Literal["CHF"]

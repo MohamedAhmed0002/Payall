@@ -16,9 +16,11 @@
     "News & Media",
     "Education",
     "Utilities",
+    "AI Services",
+    "Shopping",
     "Other"
   ],
-  "subscriptions": [
+  "catalog": [
     {
       "id": 1,
       "service": "Netflix",
@@ -26,13 +28,288 @@
     },
     {
       "id": 2,
+      "service": "Disney+",
+      "category": "Entertainment"
+    },
+    {
+      "id": 3,
+      "service": "HBO Max",
+      "category": "Entertainment"
+    },
+    {
+      "id": 4,
+      "service": "Prime Video",
+      "category": "Entertainment"
+    },
+    {
+      "id": 5,
+      "service": "Apple TV+",
+      "category": "Entertainment"
+    },
+    {
+      "id": 6,
+      "service": "YouTube Premium",
+      "category": "Entertainment"
+    },
+    {
+      "id": 7,
+      "service": "blue TV",
+      "category": "Entertainment"
+    },
+    {
+      "id": 8,
+      "service": "Zattoo",
+      "category": "Entertainment"
+    },
+    {
+      "id": 9,
+      "service": "Teleboy",
+      "category": "Entertainment"
+    },
+    {
+      "id": 10,
+      "service": "Spotify",
+      "category": "Music"
+    },
+    {
+      "id": 11,
+      "service": "Apple Music",
+      "category": "Music"
+    },
+    {
+      "id": 12,
+      "service": "Deezer",
+      "category": "Music"
+    },
+    {
+      "id": 13,
       "service": "SBB Halbtax",
       "category": "Transport"
     },
     {
-      "id": 3,
-      "service": "Spotify",
-      "category": "Music"
+      "id": 14,
+      "service": "SBB GA",
+      "category": "Transport"
+    },
+    {
+      "id": 15,
+      "service": "Mobility",
+      "category": "Transport"
+    },
+    {
+      "id": 16,
+      "service": "iCloud+",
+      "category": "Software & Cloud"
+    },
+    {
+      "id": 17,
+      "service": "Google One",
+      "category": "Software & Cloud"
+    },
+    {
+      "id": 18,
+      "service": "Microsoft 365",
+      "category": "Software & Cloud"
+    },
+    {
+      "id": 19,
+      "service": "Adobe Creative Cloud",
+      "category": "Software & Cloud"
+    },
+    {
+      "id": 20,
+      "service": "ChatGPT Plus",
+      "category": "AI Services"
+    },
+    {
+      "id": 21,
+      "service": "Dropbox",
+      "category": "Software & Cloud"
+    },
+    {
+      "id": 22,
+      "service": "NZZ",
+      "category": "News & Media"
+    },
+    {
+      "id": 23,
+      "service": "Tages-Anzeiger",
+      "category": "News & Media"
+    },
+    {
+      "id": 24,
+      "service": "Blick+",
+      "category": "News & Media"
+    },
+    {
+      "id": 25,
+      "service": "Le Temps",
+      "category": "News & Media"
+    },
+    {
+      "id": 26,
+      "service": "Swisscom",
+      "category": "Utilities"
+    },
+    {
+      "id": 27,
+      "service": "Sunrise",
+      "category": "Utilities"
+    },
+    {
+      "id": 28,
+      "service": "Salt",
+      "category": "Utilities"
+    },
+    {
+      "id": 29,
+      "service": "Serafe",
+      "category": "Utilities"
+    },
+    {
+      "id": 30,
+      "service": "Duolingo",
+      "category": "Education"
+    },
+    {
+      "id": 31,
+      "service": "Claude Pro",
+      "category": "AI Services"
+    },
+    {
+      "id": 32,
+      "service": "Gemini Advanced",
+      "category": "AI Services"
+    },
+    {
+      "id": 33,
+      "service": "Perplexity Pro",
+      "category": "AI Services"
+    },
+    {
+      "id": 34,
+      "service": "Midjourney Standard",
+      "category": "AI Services"
+    },
+    {
+      "id": 35,
+      "service": "GitHub Copilot Pro",
+      "category": "AI Services"
+    },
+    {
+      "id": 36,
+      "service": "Cursor Pro",
+      "category": "AI Services"
+    },
+    {
+      "id": 37,
+      "service": "ElevenLabs Creator",
+      "category": "AI Services"
+    },
+    {
+      "id": 38,
+      "service": "Apple One",
+      "category": "Entertainment"
+    },
+    {
+      "id": 39,
+      "service": "Sky Switzerland",
+      "category": "Entertainment"
+    },
+    {
+      "id": 40,
+      "service": "DAZN Switzerland",
+      "category": "Entertainment"
+    },
+    {
+      "id": 41,
+      "service": "Audible",
+      "category": "Entertainment"
+    },
+    {
+      "id": 42,
+      "service": "Crunchyroll Mega Fan",
+      "category": "Entertainment"
+    },
+    {
+      "id": 43,
+      "service": "Twitch Turbo",
+      "category": "Entertainment"
+    },
+    {
+      "id": 44,
+      "service": "PlayStation Plus Extra",
+      "category": "Entertainment"
+    },
+    {
+      "id": 45,
+      "service": "Xbox Game Pass Ultimate",
+      "category": "Entertainment"
+    },
+    {
+      "id": 46,
+      "service": "U-Abo",
+      "category": "Transport"
+    },
+    {
+      "id": 47,
+      "service": "ZVV NetworkPass",
+      "category": "Transport"
+    },
+    {
+      "id": 48,
+      "service": "Galaxus Mobile",
+      "category": "Other"
+    },
+    {
+      "id": 49,
+      "service": "Notion Plus",
+      "category": "Other"
+    },
+    {
+      "id": 50,
+      "service": "Proton Unlimited",
+      "category": "Other"
+    },
+    {
+      "id": 51,
+      "service": "1Password Individual",
+      "category": "Other"
+    },
+    {
+      "id": 52,
+      "service": "Figma Professional",
+      "category": "Other"
+    },
+    {
+      "id": 53,
+      "service": "Amazon Prime",
+      "category": "Shopping"
+    },
+    {
+      "id": 54,
+      "service": "eBay Plus",
+      "category": "Shopping"
+    },
+    {
+      "id": 55,
+      "service": "Zalando Plus",
+      "category": "Shopping"
+    },
+    {
+      "id": 56,
+      "service": "PureGym",
+      "category": "Health & Fitness"
+    },
+    {
+      "id": 57,
+      "service": "Activ Fitness",
+      "category": "Health & Fitness"
+    },
+    {
+      "id": 58,
+      "service": "Strava Subscription",
+      "category": "Health & Fitness"
     }
   ],
   "user_subscriptions": [
@@ -40,7 +317,6 @@
       "id": 1,
       "user_id": 1,
       "subscription_id": 1,
-      "is_custom": false,
       "price": 18.9,
       "currency": "CHF",
       "billing_period": "monthly",
@@ -53,8 +329,7 @@
     {
       "id": 2,
       "user_id": 1,
-      "subscription_id": 2,
-      "is_custom": false,
+      "subscription_id": 13,
       "price": 190.0,
       "currency": "CHF",
       "billing_period": "yearly",
@@ -66,8 +341,7 @@
     {
       "id": 3,
       "user_id": 1,
-      "subscription_id": 3,
-      "is_custom": false,
+      "subscription_id": 10,
       "price": 14.95,
       "currency": "CHF",
       "billing_period": "monthly",
