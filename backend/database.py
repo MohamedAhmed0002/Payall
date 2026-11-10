@@ -67,7 +67,7 @@ def initialise(engine):
         session.flush()
         categories = {category.name: category.id for category in session.exec(select(Category)).all()}
         subscription_rows = []
-        for row in seed["subscriptions"]:
+        for row in seed["catalog"]:
             subscription_rows.append(
                 Subscription(
                     id=row["id"],
