@@ -79,14 +79,14 @@ def test_autopay_starts_tracking_on_creation(tmp_path):
         assert payments[0]["date"] == "2026-12-01"
 
 
-def test_seed_history_and_notifications_remain_unchanged(tmp_path):
+def test_seed_history_and_notifications_exclude_paid_and_out_of_window(tmp_path):
     with client_for(tmp_path / "payall.sqlite") as client:
         payments = client.get("/history?type=payment").json()["items"]
         assert len([item for item in payments if item["service"] == "Netflix"]) == 14
         assert len([item for item in payments if item["service"] == "Spotify"]) == 14
         assert not [item for item in payments if item["service"] == "SBB Halbtax"]
         notifications = client.get("/notifications").json()
-        assert notifications["message"] == "2 renewals need attention: Netflix, SBB Halbtax"
+        assert notifications == {"count": 0, "message": None, "items": []}
 
 
 def test_search_percent_is_literal_and_sort_validation_remains(tmp_path):

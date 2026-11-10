@@ -300,35 +300,24 @@ def list_notifications(session: Session, today: date) -> NotificationOutput:
         .order_by(UserSubscription.id)
     ).all()
     items = []
+    reminder_end = today + timedelta(days=settings.reminder_days)
     for subscription in subscriptions:
         output = _to_output(session, subscription, today)
-        if output.status != "active":
+        if (
+            output.status != "active"
+            or output.payment_status != "pending"
+            or output.next_charge_date is None
+            or not today <= output.next_charge_date <= reminder_end
+        ):
             continue
-        period_start = _period_start(subscription, today)
-        autopay_covers_period = (
-            subscription.auto_pay
-            and subscription.auto_pay_since is not None
-            and period_start is not None
-            and period_start >= subscription.auto_pay_since
+        items.append(
+            NotificationItem(
+                subscription_id=subscription.id,
+                service=_service_name(session, subscription),
+                reason="payment_pending",
+                date=output.next_charge_date,
+            )
         )
-        if output.payment_status == "pending" and not autopay_covers_period and period_start is not None:
-            items.append(
-                NotificationItem(
-                    subscription_id=subscription.id,
-                    service=_service_name(session, subscription),
-                    reason="payment_pending",
-                    date=period_start,
-                )
-            )
-        elif output.next_charge_date is not None and output.next_charge_date <= today + timedelta(days=settings.reminder_days):
-            items.append(
-                NotificationItem(
-                    subscription_id=subscription.id,
-                    service=_service_name(session, subscription),
-                    reason="upcoming_charge",
-                    date=output.next_charge_date,
-                )
-            )
     names = ", ".join(item.service for item in items)
     message = None
     if items:

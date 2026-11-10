@@ -149,31 +149,52 @@ def test_settings_and_notifications(tmp_path):
     with client_for(tmp_path / "payall.sqlite") as client:
         assert client.get("/settings").json() == {"reminder_days": 7, "currency": "CHF"}
         notifications = client.get("/notifications").json()
-        assert notifications["count"] == 2
+        assert notifications == {"count": 0, "message": None, "items": []}
+        soon = client.post(
+            "/subscriptions",
+            json={
+                "service": "Within Window",
+                "category_id": 5,
+                "price": 10,
+                "currency": "CHF",
+                "billing_period": "monthly",
+                "start_date": "2026-11-10",
+                "auto_pay": False,
+                "notification_enabled": True,
+            },
+        ).json()
+        client.post(
+            "/subscriptions",
+            json={
+                "service": "Beyond Window",
+                "category_id": 5,
+                "price": 10,
+                "currency": "CHF",
+                "billing_period": "monthly",
+                "start_date": "2026-11-20",
+                "auto_pay": False,
+                "notification_enabled": True,
+            },
+        )
+        notifications = client.get("/notifications").json()
+        assert notifications["count"] == 1
         assert notifications["items"] == [
             {
-                "subscription_id": 1,
-                "service": "Netflix",
-                "reason": "upcoming_charge",
-                "date": "2026-11-12",
-            },
-            {
-                "subscription_id": 2,
-                "service": "SBB Halbtax",
+                "subscription_id": soon["id"],
+                "service": "Within Window",
                 "reason": "payment_pending",
-                "date": "2026-02-01",
+                "date": "2026-11-10",
             },
         ]
-        assert notifications["message"] == "2 renewals need attention: Netflix, SBB Halbtax"
+        assert notifications["message"] == "1 renewal needs attention: Within Window"
         assert client.post("/subscriptions/2/payments").status_code == 201
-        assert client.get("/notifications").json()["message"] == "1 renewal needs attention: Netflix"
         assert client.patch("/settings", json={"reminder_days": 3}).status_code == 200
         assert client.get("/notifications").json()["count"] == 0
         assert client.patch("/settings", json={"reminder_days": 0}).json()["field"] == "reminder_days"
         assert client.patch("/settings", json={"reminder_days": 31}).json()["field"] == "reminder_days"
         assert client.patch("/settings", json={"unknown": 1}).status_code == 422
         assert client.patch("/settings", json={"reminder_days": 7}).status_code == 200
-        assert client.post("/subscriptions/1/cancel").status_code == 200
+        assert client.post(f"/subscriptions/{soon['id']}/cancel").status_code == 200
         assert client.get("/notifications").json() == {"count": 0, "message": None, "items": []}
         assert client.get("/subscriptions/3").json()["notification_enabled"] is False
 
