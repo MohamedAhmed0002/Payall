@@ -7,6 +7,7 @@ from sqlmodel import Session, select
 
 from models import (
     Category,
+    CatalogItem,
     Payment,
     PaymentOutput,
     HistoryCancellation,
@@ -168,9 +169,7 @@ def _payment_status(session: Session, subscription: UserSubscription, today: dat
     return "paid" if payment else "pending"
 
 
-def _subscription_details(session: Session, subscription: UserSubscription) -> Subscription | None:
-    if subscription.subscription_id is None:
-        return None
+def _subscription_details(session: Session, subscription: UserSubscription) -> Subscription:
     details = session.get(Subscription, subscription.subscription_id)
     if details is None:
         raise PayallError("subscription_not_found", "id", status=404)
@@ -179,18 +178,13 @@ def _subscription_details(session: Session, subscription: UserSubscription) -> S
 
 def _service_name(session: Session, subscription: UserSubscription) -> str:
     details = _subscription_details(session, subscription)
-    service = subscription.service_name if details is None else details.service
-    if service is None:
-        raise PayallError("subscription_not_found", "id", status=404)
-    return service
+    return details.name
 
 
 def _to_output(session: Session, subscription: UserSubscription, today: date) -> SubscriptionOutput:
     details = _subscription_details(session, subscription)
-    service = subscription.service_name if details is None else details.service
-    category_id = subscription.category_id if details is None else int(details.category_id)
-    if service is None or category_id is None:
-        raise PayallError("subscription_not_found", "id", status=404)
+    service = details.name
+    category_id = details.category_id
     category = session.get(Category, category_id)
     if category is None:
         raise PayallError("category_not_found", "category_id")
@@ -201,6 +195,18 @@ def _to_output(session: Session, subscription: UserSubscription, today: date) ->
         status = "ended" if today >= subscription.ends_on else "cancelled"
     else:
         next_date = next_charge_date(subscription.start_date, subscription.billing_period, today)
+    payment_status = _payment_status(session, subscription, today)
+    if (
+        subscription.next_charge_date != next_date
+        or subscription.payment_status != payment_status
+        or subscription.status != status
+    ):
+        subscription.next_charge_date = next_date
+        subscription.payment_status = payment_status
+        subscription.status = status
+        session.add(subscription)
+        session.commit()
+        session.refresh(subscription)
     return SubscriptionOutput(
         id=subscription.id,
         user_id=subscription.user_id,
@@ -213,7 +219,7 @@ def _to_output(session: Session, subscription: UserSubscription, today: date) ->
         start_date=subscription.start_date,
         auto_pay=subscription.auto_pay,
         next_charge_date=next_date,
-        payment_status=_payment_status(session, subscription, today),
+        payment_status=payment_status,
         status=status,
         cancelled_at=subscription.cancelled_at,
         ends_on=subscription.ends_on,
@@ -223,26 +229,56 @@ def _to_output(session: Session, subscription: UserSubscription, today: date) ->
 
 def create_subscription(session: Session, payload: SubscriptionInput, today: date) -> SubscriptionOutput:
     record_due_autopay_payments(session, today)
-    if payload.price <= 0:
+    if payload.price is not None and payload.price <= 0:
         raise PayallError("price_must_be_positive", "price")
-    service = payload.service.strip()
-    if not service:
-        raise PayallError("service_name_required", "service")
-    if len(service) > 100:
-        raise PayallError("service_name_too_long", "service")
-    if payload.price > Decimal("100000.00"):
+    if payload.price is not None and payload.price > Decimal("100000.00"):
         raise PayallError("price_too_high", "price")
     if not date(2000, 1, 1) <= payload.start_date <= _one_year_after(today):
         raise PayallError("start_date_out_of_range", "start_date")
-    if session.get(Category, payload.category_id) is None:
-        raise PayallError("category_not_found", "category_id")
+
+    details = None
+    if payload.subscription_id is not None:
+        details = session.get(Subscription, payload.subscription_id)
+        if details is None:
+            raise PayallError("subscription_not_found", "subscription_id", status=404)
+    else:
+        service = (payload.service or "").strip()
+        if not service:
+            raise PayallError("service_name_required", "service")
+        if len(service) > 100:
+            raise PayallError("service_name_too_long", "service")
+        details = session.exec(
+            select(Subscription).where(func.lower(Subscription.name) == service.lower())
+        ).first()
+        if details is None:
+            if payload.category_id is None or session.get(Category, payload.category_id) is None:
+                raise PayallError("category_not_found", "category_id")
+            if payload.price is None:
+                raise PayallError("price_must_be_positive", "price")
+            if payload.billing_period is None:
+                raise PayallError("invalid_input", "billing_period")
+            details = Subscription(
+                name=service,
+                category_id=payload.category_id,
+                default_price_rappen=to_rappen(payload.price),
+                billing_period=payload.billing_period,
+                default_price_is_sample=False,
+            )
+            try:
+                session.add(details)
+                session.flush()
+            except Exception:
+                session.rollback()
+                raise
+
+    price = payload.price if payload.price is not None else from_rappen(details.default_price_rappen)
+    billing_period = payload.billing_period or details.billing_period
     subscription = UserSubscription(
         user_id=CURRENT_USER_ID,
-        service_name=service,
-        category_id=payload.category_id,
-        price_rappen=to_rappen(payload.price),
+        subscription_id=details.id,
+        price_rappen=to_rappen(price),
         currency=payload.currency,
-        billing_period=payload.billing_period,
+        billing_period=billing_period,
         start_date=payload.start_date,
         tracked_since=today,
         auto_pay=payload.auto_pay,
@@ -266,6 +302,26 @@ def read_subscription(session: Session, subscription_id: int, today: date) -> Su
 
 def list_categories(session: Session) -> list[Category]:
     return session.exec(select(Category).order_by(Category.id)).all()
+
+
+def list_catalog(session: Session) -> list[CatalogItem]:
+    rows = session.exec(
+        select(Subscription, Category)
+        .join(Category, Subscription.category_id == Category.id)
+        .order_by(Subscription.id)
+    ).all()
+    return [
+        CatalogItem(
+            id=subscription.id,
+            name=subscription.name,
+            category_id=subscription.category_id,
+            category=category.name,
+            default_price=from_rappen(subscription.default_price_rappen),
+            billing_period=subscription.billing_period,
+            default_price_is_sample=subscription.default_price_is_sample,
+        )
+        for subscription, category in rows
+    ]
 
 
 def read_settings(session: Session) -> SettingsOutput:
@@ -346,7 +402,7 @@ def list_history(session: Session, event_type: str | None, today: date) -> Histo
                     type="payment",
                     date=payment.paid_on,
                     subscription_id=subscription.id,
-                    service=_subscription_details(session, subscription).service,
+                    service=_service_name(session, subscription),
                     amount=from_rappen(payment.amount_rappen),
                     method=payment.method,
                 ),
@@ -368,7 +424,7 @@ def list_history(session: Session, event_type: str | None, today: date) -> Histo
                     type="cancellation",
                     date=subscription.cancelled_at,
                     subscription_id=subscription.id,
-                    service=_subscription_details(session, subscription).service,
+                    service=_service_name(session, subscription),
                     ends_on=subscription.ends_on,
                 ),
             )
@@ -392,12 +448,8 @@ def list_subscriptions(
         raise PayallError("invalid_input", "search")
     query = (
         select(UserSubscription)
-        .outerjoin(Subscription, UserSubscription.subscription_id == Subscription.id)
-        .outerjoin(
-            Category,
-            (Category.id == Subscription.category_id)
-            | (Category.id == UserSubscription.category_id),
-        )
+        .join(Subscription, UserSubscription.subscription_id == Subscription.id)
+        .join(Category, Category.id == Subscription.category_id)
         .where(UserSubscription.user_id == CURRENT_USER_ID)
     )
     if cleaned_search:
@@ -409,14 +461,14 @@ def list_subscriptions(
         )
         pattern = f"%{escaped_search}%"
         query = query.where(
-            (func.lower(func.coalesce(UserSubscription.service_name, Subscription.service)).like(pattern, escape="\\"))
+            (func.lower(Subscription.name).like(pattern, escape="\\"))
             | (func.lower(Category.name).like(pattern, escape="\\"))
         )
     if sort == "price":
         primary = UserSubscription.price_rappen.desc() if order == "desc" else UserSubscription.price_rappen.asc()
         query = query.order_by(primary, UserSubscription.id.asc())
     elif sort == "service":
-        service_column = func.lower(func.coalesce(UserSubscription.service_name, Subscription.service))
+        service_column = func.lower(Subscription.name)
         primary = service_column.desc() if order == "desc" else service_column.asc()
         query = query.order_by(primary, UserSubscription.id.asc())
     else:
@@ -479,19 +531,9 @@ def edit_subscription(session: Session, subscription_id: int, payload: Subscript
     ):
         raise PayallError("category_not_found", "category_id")
     if "service" in updates:
-        if subscription.subscription_id is None:
-            subscription.service_name = updates.pop("service")
-        else:
-            details = _subscription_details(session, subscription)
-            if details is not None:
-                details.service = updates.pop("service")
+        _subscription_details(session, subscription).name = updates.pop("service")
     if "category_id" in updates:
-        if subscription.subscription_id is None:
-            subscription.category_id = updates.pop("category_id")
-        else:
-            details = _subscription_details(session, subscription)
-            if details is not None:
-                details.category_id = str(updates.pop("category_id"))
+        _subscription_details(session, subscription).category_id = updates.pop("category_id")
     if "price" in updates:
         updates["price_rappen"] = to_rappen(updates.pop("price"))
     if "billing_period" in updates and updates["billing_period"] != subscription.billing_period:
@@ -505,8 +547,7 @@ def edit_subscription(session: Session, subscription_id: int, payload: Subscript
                 raise PayallError("invalid_input", field)
             setattr(subscription, field, value)
         session.add(subscription)
-        if subscription.subscription_id is not None:
-            session.add(_subscription_details(session, subscription))
+        session.add(_subscription_details(session, subscription))
         session.commit()
         session.refresh(subscription)
         return _to_output(session, subscription, today)
@@ -550,7 +591,7 @@ def mark_subscription_paid(session: Session, subscription_id: int, today: date) 
         return PaymentOutput(
             id=payment.id,
             subscription_id=subscription.id,
-            service=_subscription_details(session, subscription).service,
+            service=_service_name(session, subscription),
             period_start=payment.period_start,
             amount=from_rappen(payment.amount_rappen),
             paid_on=payment.paid_on,

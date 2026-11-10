@@ -24,292 +24,466 @@
     {
       "id": 1,
       "service": "Netflix",
-      "category": "Entertainment"
+      "category": "Entertainment",
+      "default_price": 18.9,
+      "billing_period": "monthly",
+      "default_price_is_sample": false
     },
     {
       "id": 2,
       "service": "Disney+",
-      "category": "Entertainment"
+      "category": "Entertainment",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 3,
       "service": "HBO Max",
-      "category": "Entertainment"
+      "category": "Entertainment",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 4,
       "service": "Prime Video",
-      "category": "Entertainment"
+      "category": "Entertainment",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 5,
       "service": "Apple TV+",
-      "category": "Entertainment"
+      "category": "Entertainment",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 6,
       "service": "YouTube Premium",
-      "category": "Entertainment"
+      "category": "Entertainment",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 7,
       "service": "blue TV",
-      "category": "Entertainment"
+      "category": "Entertainment",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 8,
       "service": "Zattoo",
-      "category": "Entertainment"
+      "category": "Entertainment",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 9,
       "service": "Teleboy",
-      "category": "Entertainment"
+      "category": "Entertainment",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 10,
       "service": "Spotify",
-      "category": "Music"
+      "category": "Music",
+      "default_price": 14.95,
+      "billing_period": "monthly",
+      "default_price_is_sample": false
     },
     {
       "id": 11,
       "service": "Apple Music",
-      "category": "Music"
+      "category": "Music",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 12,
       "service": "Deezer",
-      "category": "Music"
+      "category": "Music",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 13,
       "service": "SBB Halbtax",
-      "category": "Transport"
+      "category": "Transport",
+      "default_price": 190.0,
+      "billing_period": "yearly",
+      "default_price_is_sample": false
     },
     {
       "id": 14,
       "service": "SBB GA",
-      "category": "Transport"
+      "category": "Transport",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 15,
       "service": "Mobility",
-      "category": "Transport"
+      "category": "Transport",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 16,
       "service": "iCloud+",
-      "category": "Software & Cloud"
+      "category": "Software & Cloud",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 17,
       "service": "Google One",
-      "category": "Software & Cloud"
+      "category": "Software & Cloud",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 18,
       "service": "Microsoft 365",
-      "category": "Software & Cloud"
+      "category": "Software & Cloud",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 19,
       "service": "Adobe Creative Cloud",
-      "category": "Software & Cloud"
+      "category": "Software & Cloud",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 20,
       "service": "ChatGPT Plus",
-      "category": "AI Services"
+      "category": "AI Services",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 21,
       "service": "Dropbox",
-      "category": "Software & Cloud"
+      "category": "Software & Cloud",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 22,
       "service": "NZZ",
-      "category": "News & Media"
+      "category": "News & Media",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 23,
       "service": "Tages-Anzeiger",
-      "category": "News & Media"
+      "category": "News & Media",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 24,
       "service": "Blick+",
-      "category": "News & Media"
+      "category": "News & Media",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 25,
       "service": "Le Temps",
-      "category": "News & Media"
+      "category": "News & Media",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 26,
       "service": "Swisscom",
-      "category": "Utilities"
+      "category": "Utilities",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 27,
       "service": "Sunrise",
-      "category": "Utilities"
+      "category": "Utilities",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 28,
       "service": "Salt",
-      "category": "Utilities"
+      "category": "Utilities",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 29,
       "service": "Serafe",
-      "category": "Utilities"
+      "category": "Utilities",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 30,
       "service": "Duolingo",
-      "category": "Education"
+      "category": "Education",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 31,
       "service": "Claude Pro",
-      "category": "AI Services"
+      "category": "AI Services",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 32,
       "service": "Gemini Advanced",
-      "category": "AI Services"
+      "category": "AI Services",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 33,
       "service": "Perplexity Pro",
-      "category": "AI Services"
+      "category": "AI Services",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 34,
       "service": "Midjourney Standard",
-      "category": "AI Services"
+      "category": "AI Services",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 35,
       "service": "GitHub Copilot Pro",
-      "category": "AI Services"
+      "category": "AI Services",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 36,
       "service": "Cursor Pro",
-      "category": "AI Services"
+      "category": "AI Services",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 37,
       "service": "ElevenLabs Creator",
-      "category": "AI Services"
+      "category": "AI Services",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 38,
       "service": "Apple One",
-      "category": "Entertainment"
+      "category": "Entertainment",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 39,
       "service": "Sky Switzerland",
-      "category": "Entertainment"
+      "category": "Entertainment",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 40,
       "service": "DAZN Switzerland",
-      "category": "Entertainment"
+      "category": "Entertainment",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 41,
       "service": "Audible",
-      "category": "Entertainment"
+      "category": "Entertainment",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 42,
       "service": "Crunchyroll Mega Fan",
-      "category": "Entertainment"
+      "category": "Entertainment",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 43,
       "service": "Twitch Turbo",
-      "category": "Entertainment"
+      "category": "Entertainment",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 44,
       "service": "PlayStation Plus Extra",
-      "category": "Entertainment"
+      "category": "Entertainment",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 45,
       "service": "Xbox Game Pass Ultimate",
-      "category": "Entertainment"
+      "category": "Entertainment",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 46,
       "service": "U-Abo",
-      "category": "Transport"
+      "category": "Transport",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 47,
       "service": "ZVV NetworkPass",
-      "category": "Transport"
+      "category": "Transport",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 48,
       "service": "Galaxus Mobile",
-      "category": "Other"
+      "category": "Other",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 49,
       "service": "Notion Plus",
-      "category": "Other"
+      "category": "Other",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 50,
       "service": "Proton Unlimited",
-      "category": "Other"
+      "category": "Other",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 51,
       "service": "1Password Individual",
-      "category": "Other"
+      "category": "Other",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 52,
       "service": "Figma Professional",
-      "category": "Other"
+      "category": "Other",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 53,
       "service": "Amazon Prime",
-      "category": "Shopping"
+      "category": "Shopping",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 54,
       "service": "eBay Plus",
-      "category": "Shopping"
+      "category": "Shopping",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 55,
       "service": "Zalando Plus",
-      "category": "Shopping"
+      "category": "Shopping",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 56,
       "service": "PureGym",
-      "category": "Health & Fitness"
+      "category": "Health & Fitness",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 57,
       "service": "Activ Fitness",
-      "category": "Health & Fitness"
+      "category": "Health & Fitness",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     },
     {
       "id": 58,
       "service": "Strava Subscription",
-      "category": "Health & Fitness"
+      "category": "Health & Fitness",
+      "default_price": 9.99,
+      "billing_period": "monthly",
+      "default_price_is_sample": true
     }
   ],
   "user_subscriptions": [

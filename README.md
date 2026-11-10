@@ -235,8 +235,10 @@ deleting removes the subscription and its payments. The monthly total excludes
 cancelled subscriptions. Periods that started before a subscription was added to Payall
 count as paid; Payall tracks payments from that day on. Service names are limited to
 100 characters, prices to CHF 100000.00, and start dates must be between 2000-01-01
-and one year after today. New subscriptions store their service name directly on
-`usersubscription`; they do not create a row in the catalog `subscription` table.
+and one year after today. The `subscription` table is the seeded service catalog.
+Catalog defaults without a supplied real price are marked as samples in the catalog
+response. Each user subscription links to a catalog row; custom services create a
+catalog row before the user subscription is created.
 The API returns only the authenticated user's subscriptions. Search and sorting are
 handled by query parameters, and notification activation is updated through the same
 partial-update operation as other editable fields.
@@ -248,8 +250,9 @@ outside this milestone.
 | User goal | Method | Path | Example JSON / parameters | Success status and response | Meaningful failure | Open question |
 |---|---|---|---|---|---|---|
 | Log in | `POST` | `/login` | `{ "email": "lena.mueller@example.com", "password": "example-password" }` | `200 OK` — `{ "access_token": "<token>", "user": { "id": 1, "email": "lena.mueller@example.com" } }` | `401 Unauthorized` — `{ "error": "invalid_credentials" }` | How long should the bearer token remain valid, and do we need logout or refresh-token operations? |
+| Browse services | `GET` | `/catalog` | No request body | `200 OK` — catalog entries with `id`, `name`, `category_id`, `category`, `default_price`, `billing_period` and `default_price_is_sample` | – | Sample values are flagged so they can be replaced with actual prices. |
 | See, search and sort subscriptions | `GET` | `/subscriptions?search=netflix&sort=next_charge_date&order=asc` | Optional parameters: `search` (case-insensitive substring of service or category), `sort` (`next_charge_date`, `price`, `service`) and `order` (`asc`, `desc`). | `200 OK` — `{ "subscriptions": [ ... ], "monthly_total": 49.68, "currency": "CHF", "cancelled_excluded": 0 }` | `422 Unprocessable Entity` — `{ "error": "invalid_input", "field": "sort" }` | Search is case-insensitive and matches the service or category name. No pagination: a personal subscription list stays short. The monthly total always includes all active subscriptions. |
-| Add a subscription | `POST` | `/subscriptions` | `{ "service": "Local Gym", "category_id": 4, "price": 45.00, "currency": "CHF", "billing_period": "monthly", "start_date": "2025-09-12", "auto_pay": false, "notification_enabled": false }` | `201 Created` — new user subscription object with its `id`, `next_charge_date` and calculated `payment_status`; the service is stored in `usersubscription.service_name` | `422 Unprocessable Entity` — `{ "error": "price_must_be_positive", "field": "price" }`, `{ "error": "price_too_high", "field": "price" }`, `{ "error": "service_name_too_long", "field": "service" }`, `{ "error": "start_date_out_of_range", "field": "start_date" }`, or `{ "error": "category_not_found", "field": "category_id" }` | Categories come from the fixed category list. |
+| Add a catalog service | `POST` | `/subscriptions` | `{ "subscription_id": 1, "start_date": "2025-09-12", "auto_pay": false, "notification_enabled": false }` | `201 Created` — user subscription object; price and billing period default from the catalog entry | `404 Not Found` — `{ "error": "subscription_not_found", "field": "subscription_id" }` | The legacy service/category/price form remains supported for custom services; a catalog row is created before linking it. |
 | Read one subscription | `GET` | `/subscriptions/{id}` | No request body. Example path: `/subscriptions/1` | `200 OK` — subscription object | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` | – |
 | List categories | `GET` | `/categories` | No request body | `200 OK` — ordered list of `{ "id": 1, "name": "Entertainment" }` objects | – | The frontend uses this list for the category dropdown. |
 | Change a subscription or activate its notification | `PATCH` | `/subscriptions/{id}` | `{ "price": 19.90, "category_id": 5, "notification_enabled": true }` | `200 OK` — updated subscription object; changing `billing_period` restarts the period from the next charge date. | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }`, `409 Conflict` — `{ "error": "subscription_cancelled", "field": "id" }`, or `422 Unprocessable Entity` — `{ "error": "price_too_high", "field": "price" }`, `{ "error": "service_name_too_long", "field": "service" }`, `{ "error": "start_date_out_of_range", "field": "start_date" }` | Reminder timing: default 7 days, changed in `/settings` |
@@ -294,12 +297,12 @@ In code, we use the ORM **SQLModel** (built on SQLAlchemy), following the
 |---|---|---|
 | `user` | `id`, `name`, `email`, `currency`, `reminder_days`, `created_at` | One user has many subscriptions |
 | `category` | `id`, `name` | Fixed unique category list |
-| `subscription` | `id`, `service`, `category_id` | Catalog/details row; `category_id` → `category.id` |
-| `usersubscription` | `id`, `user_id`, `subscription_id`, `service_name`, `category_id`, `price_rappen`, `currency`, `billing_period`, `start_date`, `tracked_since`, `auto_pay`, `auto_pay_since`, `cancelled_at`, `ends_on`, `notification_enabled` | User-owned subscription; `user_id` → `user.id`, optional `subscription_id` → `subscription.id`, `category_id` → `category.id` |
+| `subscription` | `id`, `name` (stored in the legacy `service` column), `category_id`, `default_price_rappen`, `billing_period`, `default_price_is_sample` | Seeded service catalog; `category_id` → `category.id` |
+| `usersubscription` | `id`, `user_id`, `subscription_id`, `price_rappen`, `currency`, `billing_period`, `start_date`, `next_charge_date`, `payment_status`, `tracked_since`, `auto_pay`, `auto_pay_since`, `status`, `cancelled_at`, `ends_on`, `notification_enabled` | User-owned subscription; `user_id` → `user.id`, `subscription_id` → `subscription.id` |
 | `payment` | `id`, `subscription_id`, `period_start`, `amount_rappen`, `paid_on`, `method` | `subscription_id` → `usersubscription.id` |
 
-`next_charge_date` is not stored; the API calculates it from `start_date` and
-`billing_period` on every request, so it never goes out of date.
+`next_charge_date`, `payment_status` and `status` are refreshed from the user's
+subscription dates and payment history when subscription data is read.
 
 SQLite keeps the whole database in one local file, which is enough for development and the
 course demo. Moving to a server database (e.g. PostgreSQL) later would mainly change the
@@ -307,7 +310,7 @@ connection setting, not the models.
 
 All table IDs use SQLite `AUTOINCREMENT`, so deleted IDs are never reused. Money is
 stored as whole Rappen in `price_rappen`; API amounts remain CHF values with at most
-two decimal places.
+two decimal places. Catalog defaults are also stored as whole Rappen.
 
 Known limitation: an automatic charge is recorded with the price at the time it is
 recorded, so a price change shortly before a charge may be reflected in that charge.

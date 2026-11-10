@@ -70,18 +70,60 @@ def test_categories_are_fixed_and_ordered(tmp_path):
         response = client.get("/categories")
     assert response.status_code == 200
     categories = response.json()
-    assert len(categories) == 9
+    assert len(categories) == 11
     assert categories[0]["name"] == "Entertainment"
     assert categories[-1]["name"] == "Other"
 
 
+def test_catalog_is_seeded_with_defaults(tmp_path):
+    database_file = tmp_path / "payall.sqlite"
+    with client_for(tmp_path) as client:
+        catalog = client.get("/catalog")
+        seeded_subscription = client.get("/subscriptions/1").json()
+    assert catalog.status_code == 200
+    catalog_items = catalog.json()
+    assert len(catalog_items) == 58
+    assert sum(item["default_price_is_sample"] for item in catalog_items) == 55
+    netflix = next(item for item in catalog_items if item["name"] == "Netflix")
+    assert netflix == {
+        "id": 1,
+        "name": "Netflix",
+        "category_id": 1,
+        "category": "Entertainment",
+        "default_price": 18.9,
+        "billing_period": "monthly",
+        "default_price_is_sample": False,
+    }
+    assert seeded_subscription["next_charge_date"] == "2026-11-12"
+    assert seeded_subscription["payment_status"] == "paid"
+    engine = make_engine(database_file)
+    with Session(engine) as session:
+        user_subscription = session.exec(
+            select(UserSubscription).where(UserSubscription.id == 1)
+        ).one()
+        assert user_subscription.next_charge_date == date(2026, 11, 12)
+        assert user_subscription.payment_status == "paid"
+        assert user_subscription.status == "active"
+        catalog_subscription = session.get(Subscription, 1)
+        catalog_subscription.name = "Preserved catalog edit"
+        session.add(catalog_subscription)
+        session.commit()
+    initialise(engine)
+    with Session(engine) as session:
+        assert session.exec(select(Subscription)).all()[0].name == "Preserved catalog edit"
+
+
 def test_create_subscription_and_updated_total(tmp_path):
     with client_for(tmp_path) as client:
-        response = client.post("/subscriptions", json=valid_payload())
+        response = client.post(
+            "/subscriptions",
+            json={"subscription_id": 1, "start_date": "2026-01-15", "auto_pay": False},
+        )
         assert response.status_code == 201
         assert response.headers["location"] == "/subscriptions/4"
         assert client.get(response.headers["location"]).json() == response.json()
-        assert client.get("/subscriptions").json()["monthly_total"] == 61.68
+        assert client.get("/subscriptions").json()["monthly_total"] == 68.58
+        assert len(client.get("/catalog").json()) == 58
 
 
 def test_create_custom_subscription(tmp_path):
@@ -96,8 +138,12 @@ def test_create_custom_subscription(tmp_path):
         user_subscription = session.exec(
             select(UserSubscription).where(UserSubscription.id == response.json()["id"])
         ).one()
-        assert user_subscription.service_name == "Local Gym"
-        assert user_subscription.subscription_id is None
+        catalog = session.get(Subscription, user_subscription.subscription_id)
+        assert catalog.name == "Local Gym"
+        assert catalog.category_id == 4
+        assert catalog.default_price_rappen == 1200
+        assert catalog.billing_period == "monthly"
+        assert len(session.exec(select(Subscription)).all()) == 59
 
 
 def test_rappen_round_trip(tmp_path):
@@ -158,7 +204,12 @@ def test_edit_subscription_plan_change_starts_at_next_charge(tmp_path):
     engine = make_engine(tmp_path / "payall.sqlite")
     initialise(engine)
     with Session(engine) as session:
-        details = Subscription(service="Monthly", category_id="1")
+        details = Subscription(
+            name="Monthly",
+            category_id=1,
+            default_price_rappen=1000,
+            billing_period="monthly",
+        )
         session.add(details)
         session.flush()
         subscription = UserSubscription(

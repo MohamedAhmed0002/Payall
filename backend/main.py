@@ -12,6 +12,7 @@ from sqlmodel import Session
 from database import initialise, make_engine
 from models import (
     Category,
+    CatalogItem,
     Error,
     SubscriptionInput,
     SubscriptionList,
@@ -30,6 +31,7 @@ from service import (
     edit_subscription,
     list_subscriptions,
     list_categories,
+    list_catalog,
     mark_subscription_paid,
     cancel_subscription,
     read_subscription,
@@ -133,6 +135,16 @@ def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> 
     )
     def get_categories(session: DatabaseSession):
         return list_categories(session)
+
+    @app.get(
+        "/catalog",
+        response_model=list[CatalogItem],
+        tags=["Catalog"],
+        operation_id="listCatalog",
+        summary="List catalog services",
+    )
+    def get_catalog(session: DatabaseSession):
+        return list_catalog(session)
 
     @app.get(
         "/settings",

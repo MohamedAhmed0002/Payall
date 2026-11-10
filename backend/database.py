@@ -97,57 +97,161 @@ def initialise(engine):
     user_subscription_columns = {
         column["name"] for column in inspector.get_columns("usersubscription")
     }
-    if "service_name" not in user_subscription_columns:
-        with engine.begin() as connection:
-            connection.exec_driver_sql("ALTER TABLE usersubscription ADD COLUMN service_name VARCHAR")
-    if "category_id" not in user_subscription_columns:
-        with engine.begin() as connection:
-            connection.exec_driver_sql("ALTER TABLE usersubscription ADD COLUMN category_id INTEGER REFERENCES category(id)")
     if "subscription_id" not in user_subscription_columns and {"service", "category_id"} <= user_subscription_columns:
         with engine.begin() as connection:
             connection.exec_driver_sql(
                 "ALTER TABLE usersubscription ADD COLUMN subscription_id INTEGER REFERENCES subscription(id)"
             )
+            catalog_columns = {
+                column["name"] for column in inspect(connection).get_columns("subscription")
+            }
             rows = connection.exec_driver_sql(
-                "SELECT id, service, category_id FROM usersubscription"
+                "SELECT id, service, category_id, price_rappen, billing_period FROM usersubscription"
             ).fetchall()
-            for subscription_id, service, category_id in rows:
-                connection.exec_driver_sql(
-                    "INSERT OR IGNORE INTO subscription (id, service, category_id) VALUES (?, ?, ?)",
-                    (subscription_id, service, str(category_id)),
-                )
+            for subscription_id, service, category_id, price_rappen, billing_period in rows:
+                if {"service", "default_price_rappen", "billing_period"} <= catalog_columns:
+                    connection.exec_driver_sql(
+                        """
+                        INSERT OR IGNORE INTO subscription (
+                            id, service, category_id, default_price_rappen, billing_period,
+                            default_price_is_sample
+                        ) VALUES (?, ?, ?, ?, ?, 0)
+                        """,
+                        (subscription_id, service, category_id, price_rappen, billing_period),
+                    )
+                elif "service" in catalog_columns:
+                    connection.exec_driver_sql(
+                        "INSERT OR IGNORE INTO subscription (id, service, category_id) VALUES (?, ?, ?)",
+                        (subscription_id, service, str(category_id)),
+                    )
+                else:
+                    connection.exec_driver_sql(
+                        """
+                        INSERT OR IGNORE INTO subscription (
+                            id, name, category_id, default_price_rappen, billing_period,
+                            default_price_is_sample
+                        ) VALUES (?, ?, ?, 999, 'monthly', 1)
+                        """,
+                        (subscription_id, service, category_id),
+                    )
                 connection.exec_driver_sql(
                     "UPDATE usersubscription SET subscription_id = ? WHERE id = ?",
                     (subscription_id, subscription_id),
                 )
-    if not new_schema:
-        return
-
     seed = json.loads(Path(__file__).with_name("seed.json").read_text(encoding="utf-8"))
+    catalog_columns = {column["name"] for column in inspect(engine).get_columns("subscription")}
+    catalog_defaults_need_migration = (
+        "default_price_rappen" not in catalog_columns
+        or "billing_period" not in catalog_columns
+        or "default_price_is_sample" not in catalog_columns
+    )
+    if "default_price_rappen" not in catalog_columns:
+        with engine.begin() as connection:
+            connection.exec_driver_sql(
+                "ALTER TABLE subscription ADD COLUMN default_price_rappen INTEGER NOT NULL DEFAULT 999"
+            )
+    if "billing_period" not in catalog_columns:
+        with engine.begin() as connection:
+            connection.exec_driver_sql(
+                "ALTER TABLE subscription ADD COLUMN billing_period VARCHAR NOT NULL DEFAULT 'monthly'"
+            )
+    if "default_price_is_sample" not in catalog_columns:
+        with engine.begin() as connection:
+            connection.exec_driver_sql(
+                "ALTER TABLE subscription ADD COLUMN default_price_is_sample BOOLEAN NOT NULL DEFAULT 1"
+            )
+    user_subscription_columns = {
+        column["name"] for column in inspect(engine).get_columns("usersubscription")
+    }
+    for column, sql_type, default in (
+        ("next_charge_date", "DATE", "NULL"),
+        ("payment_status", "VARCHAR", "'pending'"),
+        ("status", "VARCHAR", "'active'"),
+    ):
+        if column not in user_subscription_columns:
+            with engine.begin() as connection:
+                connection.exec_driver_sql(
+                    f"ALTER TABLE usersubscription ADD COLUMN {column} {sql_type} DEFAULT {default}"
+                )
+
     with Session(engine) as session, session.begin():
         user_data = seed["user"]
-        user_data["created_at"] = datetime.fromisoformat(user_data["created_at"].replace("Z", "+00:00"))
-        session.add(User(**user_data))
+        if session.get(User, user_data["id"]) is None:
+            user_data["created_at"] = datetime.fromisoformat(
+                user_data["created_at"].replace("Z", "+00:00")
+            )
+            session.add(User(**user_data))
+        existing_categories = {
+            category.name for category in session.exec(select(Category)).all()
+        }
+        session.add_all(
+            [
+                Category(name=name)
+                for name in seed["categories"]
+                if name not in existing_categories
+            ]
+        )
         session.flush()
-        session.add_all([Category(name=name) for name in seed["categories"]])
         session.flush()
         categories = {category.name: category.id for category in session.exec(select(Category)).all()}
-        subscription_rows = []
-        for row in seed["catalog"]:
-            subscription_rows.append(
-                Subscription(
-                    id=row["id"],
-                    service=row["service"],
-                    category_id=str(categories[row["category"]]),
-                )
+        catalog_is_empty = session.exec(select(Subscription).limit(1)).first() is None
+        if catalog_defaults_need_migration and not catalog_is_empty:
+            for row in seed["catalog"]:
+                catalog_entry = session.get(Subscription, row["id"])
+                if catalog_entry is not None:
+                    catalog_entry.default_price_rappen = int(
+                        Decimal(str(row["default_price"])) * 100
+                    )
+                    catalog_entry.billing_period = row["billing_period"]
+                    catalog_entry.default_price_is_sample = row["default_price_is_sample"]
+        if catalog_is_empty:
+            session.add_all(
+                [
+                    Subscription(
+                        id=row["id"],
+                        name=row["service"],
+                        category_id=categories[row["category"]],
+                        default_price_rappen=int(Decimal(str(row["default_price"])) * 100),
+                        billing_period=row["billing_period"],
+                        default_price_is_sample=row["default_price_is_sample"],
+                    )
+                    for row in seed["catalog"]
+                ]
             )
-        session.add_all(subscription_rows)
-        user_subscriptions = []
-        for row in seed["user_subscriptions"]:
-            row["start_date"] = date.fromisoformat(row["start_date"])
-            row["tracked_since"] = date.fromisoformat(row["tracked_since"])
-            if row.get("auto_pay_since") is not None:
-                row["auto_pay_since"] = date.fromisoformat(row["auto_pay_since"])
-            row["price_rappen"] = int(Decimal(str(row.pop("price"))) * 100)
-            user_subscriptions.append(UserSubscription(**row))
-        session.add_all(user_subscriptions)
+        session.flush()
+        orphan_subscriptions = []
+        if {"service_name", "category_id"} <= user_subscription_columns:
+            orphan_subscriptions = session.connection().exec_driver_sql(
+                """
+                SELECT id, service_name, category_id, price_rappen, billing_period
+                FROM usersubscription
+                WHERE subscription_id IS NULL
+                """
+            ).fetchall()
+        for row_id, service_name, category_id, price_rappen, billing_period in orphan_subscriptions:
+            if not service_name or category_id is None:
+                raise ValueError(f"User subscription {row_id} cannot be linked to a catalog entry")
+            catalog_entry = Subscription(
+                name=service_name,
+                category_id=category_id,
+                default_price_rappen=price_rappen,
+                billing_period=billing_period,
+                default_price_is_sample=False,
+            )
+            session.add(catalog_entry)
+            session.flush()
+            session.connection().exec_driver_sql(
+                "UPDATE usersubscription SET subscription_id = ? WHERE id = ?",
+                (catalog_entry.id, row_id),
+            )
+        if new_schema:
+            session.flush()
+            user_subscriptions = []
+            for row in seed["user_subscriptions"]:
+                row["start_date"] = date.fromisoformat(row["start_date"])
+                row["tracked_since"] = date.fromisoformat(row["tracked_since"])
+                if row.get("auto_pay_since") is not None:
+                    row["auto_pay_since"] = date.fromisoformat(row["auto_pay_since"])
+                row["price_rappen"] = int(Decimal(str(row.pop("price"))) * 100)
+                user_subscriptions.append(UserSubscription(**row))
+            session.add_all(user_subscriptions)

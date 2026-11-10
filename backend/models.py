@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
-from sqlalchemy import CheckConstraint, UniqueConstraint
+from sqlalchemy import CheckConstraint, Column, String, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 
@@ -27,18 +27,21 @@ class UserSubscription(SQLModel, table=True):
     __table_args__ = (
         CheckConstraint("price_rappen > 0"),
         CheckConstraint("billing_period IN ('weekly', 'monthly', 'yearly')"),
+        CheckConstraint("payment_status IN ('paid', 'pending')"),
+        CheckConstraint("status IN ('active', 'cancelled', 'ended')"),
         {"sqlite_autoincrement": True},
     )
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", index=True)
-    subscription_id: int | None = Field(default=None, foreign_key="subscription.id", index=True)
-    service_name: str | None = None
-    category_id: int | None = Field(default=None, foreign_key="category.id", index=True)
+    subscription_id: int = Field(foreign_key="subscription.id", index=True)
     price_rappen: int
     currency: str
     billing_period: str
     start_date: date
+    next_charge_date: date | None = None
+    payment_status: str = "pending"
+    status: str = "active"
     tracked_since: date
     auto_pay: bool
     auto_pay_since: date | None = None
@@ -49,10 +52,17 @@ class UserSubscription(SQLModel, table=True):
 
 class Subscription(SQLModel, table=True):
     __tablename__ = "subscription"
+    __table_args__ = (
+        CheckConstraint("default_price_rappen > 0"),
+        CheckConstraint("billing_period IN ('weekly', 'monthly', 'yearly')"),
+    )
 
     id: int | None = Field(default=None, primary_key=True)
-    service: str
-    category_id: str = Field(foreign_key="category.id", index=True)
+    name: str = Field(sa_column=Column("service", String, nullable=False))
+    category_id: int = Field(foreign_key="category.id", index=True)
+    default_price_rappen: int = Field(gt=0)
+    billing_period: str
+    default_price_is_sample: bool = False
 
 
 class Payment(SQLModel, table=True):
@@ -83,25 +93,26 @@ class Category(SQLModel, table=True):
 class SubscriptionInput(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
-    service: str
-    category_id: int
-    price: Decimal
-    currency: Literal["CHF"]
-    billing_period: Literal["weekly", "monthly", "yearly"]
+    subscription_id: int | None = None
+    service: str | None = None
+    category_id: int | None = None
+    price: Decimal | None = None
+    currency: Literal["CHF"] = "CHF"
+    billing_period: Literal["weekly", "monthly", "yearly"] | None = None
     start_date: date
     auto_pay: bool
     notification_enabled: bool = False
 
     @field_validator("price")
     @classmethod
-    def validate_price_precision(cls, value: Decimal) -> Decimal:
-        if value.as_tuple().exponent < -2:
+    def validate_price_precision(cls, value: Decimal | None) -> Decimal | None:
+        if value is not None and value.as_tuple().exponent < -2:
             raise ValueError("Price must have at most 2 decimal places")
         return value
 
     @field_serializer("price")
-    def serialize_price(self, value: Decimal) -> float:
-        return float(value)
+    def serialize_price(self, value: Decimal | None) -> float | None:
+        return float(value) if value is not None else None
 
 
 class SubscriptionUpdate(BaseModel):
@@ -124,15 +135,41 @@ class SubscriptionUpdate(BaseModel):
         return value
 
 
-class SubscriptionOutput(SubscriptionInput):
+class SubscriptionOutput(BaseModel):
     id: int
     user_id: int
     category: str
+    service: str
+    category_id: int
+    price: Decimal
+    currency: Literal["CHF"]
+    billing_period: Literal["weekly", "monthly", "yearly"]
+    start_date: date
+    auto_pay: bool
     next_charge_date: date | None
     payment_status: Literal["paid", "pending"]
     status: Literal["active", "cancelled", "ended"]
     cancelled_at: date | None
     ends_on: date | None
+    notification_enabled: bool
+
+    @field_serializer("price")
+    def serialize_price(self, value: Decimal) -> float:
+        return float(value)
+
+
+class CatalogItem(BaseModel):
+    id: int
+    name: str
+    category_id: int
+    category: str
+    default_price: Decimal
+    billing_period: Literal["weekly", "monthly", "yearly"]
+    default_price_is_sample: bool
+
+    @field_serializer("default_price")
+    def serialize_default_price(self, value: Decimal) -> float:
+        return float(value)
 
 
 class Error(BaseModel):
