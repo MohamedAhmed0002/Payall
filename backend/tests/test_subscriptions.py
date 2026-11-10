@@ -88,11 +88,16 @@ def test_create_custom_subscription(tmp_path):
     with client_for(tmp_path) as client:
         response = client.post(
             "/subscriptions",
-            json=valid_payload(service="Local Gym", category_id=4, is_custom=True),
+            json=valid_payload(service="Local Gym", category_id=4),
         )
     assert response.status_code == 201
-    assert response.json()["is_custom"] is True
     assert response.json()["category"] == "Health & Fitness"
+    with Session(client.app.state.engine) as session:
+        user_subscription = session.exec(
+            select(UserSubscription).where(UserSubscription.id == response.json()["id"])
+        ).one()
+        assert user_subscription.service_name == "Local Gym"
+        assert user_subscription.subscription_id is None
 
 
 def test_rappen_round_trip(tmp_path):
@@ -159,7 +164,6 @@ def test_edit_subscription_plan_change_starts_at_next_charge(tmp_path):
         subscription = UserSubscription(
             user_id=1,
             subscription_id=details.id,
-            is_custom=False,
             price_rappen=1000,
             currency="CHF",
             billing_period="monthly",

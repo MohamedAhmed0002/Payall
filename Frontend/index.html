@@ -1814,10 +1814,6 @@
           ? `<span class="status-tag status-tag-pending"><span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>Pending</span>`
           : `<span class="status-tag status-tag-paid"><span class="w-1.5 h-1.5 rounded-full bg-emerald-700"></span>Paid</span>`;
 
-        const customTag = sub.is_custom
-          ? `<span class="ml-2 px-1.5 py-0.5 rounded bg-obsidian/5 border border-obsidian/10 font-mono text-[9px] uppercase text-stone">Custom</span>`
-          : '';
-
         const cancelledTag = isCancelled
           ? `<span class="ml-2 px-1.5 py-0.5 rounded bg-red-50 border border-red-200 font-mono text-[9px] uppercase text-red-700">Cancelled (Ends ${formatDateText(sub.ends_on)})</span>`
           : '';
@@ -1835,7 +1831,6 @@
                 <div class="min-w-0">
                   <div class="flex items-center flex-wrap">
                     <p class="font-sans font-bold text-base text-obsidian truncate">${sub.service}</p>
-                    ${customTag}
                     ${cancelledTag}
                   </div>
                   <p class="text-xs text-stone truncate">${sub.category} . <span class="capitalize">${sub.billing_period}</span></p>
@@ -2209,7 +2204,6 @@
       const notification_enabled = document.getElementById('form-notification').checked;
       const paymentMode = document.querySelector('input[name="payment_mode"]:checked').value;
       const auto_pay = paymentMode === 'auto';
-      const is_custom = document.getElementById('form-is-custom').value === 'true';
 
       try {
         if (idVal) {
@@ -2227,7 +2221,6 @@
         } else {
           await ApiService.createSubscription({
             service,
-            is_custom,
             category_id,
             price,
             currency: 'CHF',
