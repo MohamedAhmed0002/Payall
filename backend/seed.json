@@ -288,13 +288,13 @@
     },
     {
       "id": 54,
-      "service": "Prime Video",
-      "category": "Entertainment"
+      "service": "eBay Plus",
+      "category": "Shopping"
     },
     {
       "id": 55,
-      "service": "Prime Video",
-      "category": "Entertainment"
+      "service": "Zalando Plus",
+      "category": "Shopping"
     },
     {
       "id": 56,
@@ -330,7 +330,7 @@
     {
       "id": 2,
       "user_id": 1,
-      "subscription_id": 2,
+      "subscription_id": 13,
       "is_custom": false,
       "price": 190.0,
       "currency": "CHF",
@@ -343,7 +343,7 @@
     {
       "id": 3,
       "user_id": 1,
-      "subscription_id": 3,
+      "subscription_id": 10,
       "is_custom": false,
       "price": 14.95,
       "currency": "CHF",
