@@ -4,6 +4,12 @@
 
 **Getting started:** See the [backend setup guide](backend/README.md).
 
+## How to run
+1. From the root folder, run: python start_all.py
+2. Open http://127.0.0.1:3000 (opening index.html directly doesn't work anymore)
+
+Without the launcher: run python run.py in /backend and python server.py in /Frontend, each in its own terminal.
+
 ## Project overview
 
 Payall is a web app to track spending, manage budgets and monitor subscriptions. People often forget which subscriptions they have, when they renew and how much they pay in total. For the first milestone we focus on subscriptions only: the user sees all subscriptions in one dashboard, with price, billing period, payment status and the total cost per month.
