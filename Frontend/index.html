@@ -448,6 +448,9 @@
           <button type="button" onclick="switchMainView('settings')" id="nav-btn-settings" class="nav-link-luxury">
             Settings
           </button>
+          <button type="button" onclick="switchMainView('history')" id="nav-btn-history" class="nav-link-luxury">
+            History
+          </button>
           <a href="#about-us-section" onclick="handleAboutNavClick(event)" id="nav-btn-about" class="nav-link-luxury">
             About Us
           </a>
@@ -488,6 +491,7 @@
       <div class="flex items-center gap-6 sm:gap-8">
         <a href="#workspace-anchor" onclick="switchMainView('dashboard')" class="hero-top-nav-link">Dashboard</a>
         <button type="button" onclick="switchMainView('settings'); document.getElementById('workspace-anchor').scrollIntoView({behavior:'smooth'});" class="hero-top-nav-link">Settings</button>
+        <button type="button" onclick="switchMainView('history'); document.getElementById('workspace-anchor').scrollIntoView({behavior:'smooth'});" class="hero-top-nav-link">History</button>
         <a href="#about-us-section" class="hero-top-nav-link">About Us</a>
       </div>
     </div>
@@ -1084,6 +1088,48 @@
       </div>
     </section>
 
+    <!-- =================================================================== -->
+    <!-- VIEW 3: HISTORY VIEW                                                -->
+    <!-- =================================================================== -->
+    <section id="view-history" class="hidden max-w-5xl mx-auto px-6 sm:px-10 pt-4">
+      <div class="mb-10 pb-6 border-b border-obsidian/10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <span class="font-mono text-[11px] uppercase tracking-[0.2em] text-gold-dark font-semibold">03 // WORKSPACE . HISTORY</span>
+          <h2 class="atelier-headline text-4xl sm:text-5xl text-obsidian mt-1">PAYMENT HISTORY</h2>
+          <p class="text-sm text-stone mt-2">Review recorded payments and subscription cancellations.</p>
+        </div>
+        <button type="button" onclick="switchMainView('dashboard')" class="btn-sweep-light px-5 py-2.5 rounded-lg font-mono text-xs uppercase tracking-widest self-start sm:self-auto">
+          Back to Dashboard
+        </button>
+      </div>
+      <div class="mb-6 flex flex-col sm:flex-row gap-3">
+        <input
+          id="history-search"
+          type="search"
+          placeholder="Search history..."
+          oninput="renderHistory()"
+          class="flex-1 px-4 py-3 bg-alabaster border border-obsidian/15 rounded-xl text-xs text-obsidian placeholder-stone focus:outline-none focus:border-gold"
+        />
+        <select
+          id="history-sort"
+          onchange="renderHistory()"
+          class="px-4 py-3 bg-alabaster border border-obsidian/15 rounded-xl text-xs text-obsidian focus:outline-none focus:border-gold"
+        >
+          <option value="date-desc">Newest first</option>
+          <option value="date-asc">Oldest first</option>
+          <option value="service-asc">Service A-Z</option>
+          <option value="service-desc">Service Z-A</option>
+          <option value="amount-desc">Amount high-low</option>
+          <option value="amount-asc">Amount low-high</option>
+        </select>
+      </div>
+      <div id="history-error" class="hidden rounded-lg bg-red-50 border border-red-300 px-4 py-3 text-xs text-red-800 font-medium"></div>
+      <div id="history-empty" class="hidden bg-alabaster border border-obsidian/10 rounded-2xl p-10 text-center text-sm text-stone">
+        No history recorded yet.
+      </div>
+      <div id="history-list" class="space-y-3"></div>
+    </section>
+
   </div>
 
   <!-- ===================================================================== -->
@@ -1183,10 +1229,10 @@
           </select>
         </div>
 
-        <!-- ADD MODE: POPULAR SERVICES DROPDOWN LIST -->
+        <!-- ADD MODE: CATALOG SERVICES DROPDOWN LIST -->
         <div id="popular-services-section" class="space-y-2.5">
           <div class="flex items-center justify-between">
-            <span class="font-mono text-[10px] uppercase tracking-widest text-stone">Popular Services</span>
+            <span class="font-mono text-[10px] uppercase tracking-widest text-stone">Catalog Services</span>
             <button type="button" onclick="selectCustomServicePreset()" class="font-mono text-[11px] text-gold-dark hover:text-obsidian font-medium transition-colors">
               + Add custom service →
             </button>
@@ -1202,7 +1248,7 @@
               <div class="flex items-center gap-3 min-w-0">
                 <span id="selected-preset-icon" class="w-7 h-7 rounded-lg bg-obsidian text-white flex items-center justify-center font-mono text-xs shrink-0">+</span>
                 <div class="truncate">
-                  <p id="selected-preset-title" class="text-xs font-bold text-obsidian truncate">Choose from popular services (Netflix, Spotify, SBB...)</p>
+                  <p id="selected-preset-title" class="text-xs font-bold text-obsidian truncate">Choose a service from the catalog</p>
                   <p id="selected-preset-sub" class="text-[10px] font-mono text-stone">Click to open service dropdown list</p>
                 </div>
               </div>
@@ -1219,7 +1265,7 @@
                 <input
                   id="preset-search-input"
                   type="text"
-                  placeholder="Search 45+ popular services (ChatGPT, Netflix, SBB, Claude...)"
+                  placeholder="Search services in the catalog..."
                   oninput="renderPopularPresets(this.value)"
                   class="w-full px-3.5 py-2 bg-white border border-obsidian/15 rounded-lg text-xs text-obsidian placeholder-stone focus:outline-none focus:border-gold"
                 />
@@ -1249,6 +1295,7 @@
         <!-- Subscription Form -->
         <form id="subscription-form" onsubmit="handleSubscriptionSubmit(event)" class="space-y-5 pt-2 border-t border-obsidian/10" novalidate>
           <input type="hidden" id="form-sub-id" value="" />
+          <input type="hidden" id="form-subscription-id" value="" />
           <input type="hidden" id="form-is-custom" value="false" />
 
           <!-- Error Alert Box (Displays API {error, field, message}) -->
@@ -1281,11 +1328,6 @@
                   class="w-full px-3.5 py-2.5 bg-alabaster border border-obsidian/15 rounded-lg text-xs text-obsidian focus:outline-none focus:border-gold"
                 >
                   <!-- Populated from GET /api/categories -->
-                  <option value="1">Entertainment</option>
-                  <option value="2">Transport</option>
-                  <option value="3">Shopping</option>
-                  <option value="4">Fitness</option>
-                  <option value="5">Other</option>
                 </select>
               </div>
             </div>
@@ -1568,66 +1610,13 @@
       return `<div class="w-11 h-11 rounded-xl bg-obsidian text-gold font-display text-lg flex items-center justify-center shrink-0 shadow-sm">${initial}</div>`;
     }
 
-    const POPULAR_PRESETS = [
-      // AI & Developer Subscriptions
-      { service: 'ChatGPT Plus', category: 'Entertainment', price: 20.00, billing_period: 'monthly' },
-      { service: 'Claude Pro', category: 'Entertainment', price: 20.00, billing_period: 'monthly' },
-      { service: 'Gemini Advanced', category: 'Entertainment', price: 21.90, billing_period: 'monthly' },
-      { service: 'Perplexity Pro', category: 'Entertainment', price: 20.00, billing_period: 'monthly' },
-      { service: 'Midjourney Standard', category: 'Entertainment', price: 30.00, billing_period: 'monthly' },
-      { service: 'GitHub Copilot Pro', category: 'Entertainment', price: 10.00, billing_period: 'monthly' },
-      { service: 'Cursor Pro', category: 'Entertainment', price: 20.00, billing_period: 'monthly' },
-      { service: 'ElevenLabs Creator', category: 'Entertainment', price: 22.00, billing_period: 'monthly' },
-      // Streaming & Entertainment
-      { service: 'Netflix', category: 'Entertainment', price: 18.90, billing_period: 'monthly' },
-      { service: 'Spotify', category: 'Entertainment', price: 14.95, billing_period: 'monthly' },
-      { service: 'Disney+', category: 'Entertainment', price: 9.90, billing_period: 'monthly' },
-      { service: 'YouTube Premium', category: 'Entertainment', price: 15.90, billing_period: 'monthly' },
-      { service: 'Apple Music', category: 'Entertainment', price: 12.90, billing_period: 'monthly' },
-      { service: 'Apple TV+', category: 'Entertainment', price: 10.90, billing_period: 'monthly' },
-      { service: 'Apple One', category: 'Entertainment', price: 24.90, billing_period: 'monthly' },
-      { service: 'Sky Switzerland', category: 'Entertainment', price: 24.90, billing_period: 'monthly' },
-      { service: 'DAZN Switzerland', category: 'Entertainment', price: 34.90, billing_period: 'monthly' },
-      { service: 'Audible', category: 'Entertainment', price: 9.95, billing_period: 'monthly' },
-      { service: 'Crunchyroll Mega Fan', category: 'Entertainment', price: 9.99, billing_period: 'monthly' },
-      { service: 'Twitch Turbo', category: 'Entertainment', price: 11.99, billing_period: 'monthly' },
-      // Swiss Transport & Mobility
-      { service: 'SBB Halbtax', category: 'Transport', price: 190.00, billing_period: 'yearly' },
-      { service: 'SBB GA Travelcard', category: 'Transport', price: 3995.00, billing_period: 'yearly' },
-      { service: 'U-Abo', category: 'Transport', price: 86.00, billing_period: 'monthly' },
-      { service: 'ZVV NetworkPass', category: 'Transport', price: 85.00, billing_period: 'monthly' },
-      { service: 'Mobility Carsharing', category: 'Transport', price: 12.90, billing_period: 'monthly' },
-      // Swiss Telecom, News & Household
-      { service: 'Swisscom blue Mobile M', category: 'Other', price: 69.90, billing_period: 'monthly' },
-      { service: 'Sunrise Up Mobile L', category: 'Other', price: 59.90, billing_period: 'monthly' },
-      { service: 'Salt Swiss XXL', category: 'Other', price: 49.95, billing_period: 'monthly' },
-      { service: 'Galaxus Mobile', category: 'Other', price: 19.00, billing_period: 'monthly' },
-      { service: 'Serafe Media Fee', category: 'Other', price: 335.00, billing_period: 'yearly' },
-      { service: 'NZZ Digital', category: 'Entertainment', price: 29.00, billing_period: 'monthly' },
-      // Shopping, Cloud & Productivity
-      { service: 'Amazon Prime', category: 'Shopping', price: 9.90, billing_period: 'monthly' },
-      { service: 'Apple iCloud+ 2TB', category: 'Other', price: 11.00, billing_period: 'monthly' },
-      { service: 'Google One 2TB', category: 'Other', price: 10.00, billing_period: 'monthly' },
-      { service: 'Microsoft 365 Personal', category: 'Other', price: 7.95, billing_period: 'monthly' },
-      { service: 'Adobe Creative Cloud', category: 'Other', price: 62.90, billing_period: 'monthly' },
-      { service: 'Notion Plus', category: 'Other', price: 10.00, billing_period: 'monthly' },
-      { service: 'Dropbox Plus', category: 'Other', price: 11.99, billing_period: 'monthly' },
-      { service: 'Proton Unlimited', category: 'Other', price: 12.99, billing_period: 'monthly' },
-      { service: '1Password Individual', category: 'Other', price: 3.99, billing_period: 'monthly' },
-      { service: 'Figma Professional', category: 'Other', price: 15.00, billing_period: 'monthly' },
-      // Fitness & Gaming
-      { service: 'PureGym', category: 'Fitness', price: 57.00, billing_period: 'monthly' },
-      { service: 'Activ Fitness', category: 'Fitness', price: 74.00, billing_period: 'monthly' },
-      { service: 'Strava Subscription', category: 'Fitness', price: 11.00, billing_period: 'monthly' },
-      { service: 'PlayStation Plus Extra', category: 'Entertainment', price: 14.25, billing_period: 'monthly' },
-      { service: 'Xbox Game Pass Ultimate', category: 'Entertainment', price: 16.99, billing_period: 'monthly' }
-    ];
-
     // =========================================================================
     // 2. STATE CACHE (Holds only what the API returns — NO mock fixtures)
     // =========================================================================
     let loadedSubscriptions = [];
     let loadedCategories = [];
+    let loadedCatalog = [];
+    let loadedHistory = [];
     let loadedSettings = { reminder_days: 7, currency: 'CHF' };
 
     // =========================================================================
@@ -1707,8 +1696,16 @@
         return this.request('/categories');
       },
 
+      getCatalog() {
+        return this.request('/catalog');
+      },
+
       getNotifications() {
         return this.request('/notifications');
+      },
+
+      getHistory() {
+        return this.request('/history');
       },
 
       getSettings() {
@@ -1772,6 +1769,76 @@
         document.getElementById('empty-subscriptions-message').textContent = 'Waiting for FastAPI backend (/api/subscriptions)';
         document.getElementById('empty-subscriptions-sub').textContent = `Run "python server.py" with FastAPI running on 127.0.0.1:8000 (${err.message})`;
       }
+    }
+
+    async function loadHistory() {
+      const listEl = document.getElementById('history-list');
+      const errorEl = document.getElementById('history-error');
+      errorEl.classList.add('hidden');
+      try {
+        const data = await ApiService.getHistory();
+        loadedHistory = data.items || [];
+        renderHistory();
+      } catch (err) {
+        listEl.innerHTML = '';
+        document.getElementById('history-empty').classList.add('hidden');
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('hidden');
+      }
+    }
+
+    function renderHistory() {
+      const listEl = document.getElementById('history-list');
+      const emptyEl = document.getElementById('history-empty');
+      const query = (document.getElementById('history-search').value || '').trim().toLowerCase();
+      const sort = document.getElementById('history-sort').value;
+      const items = loadedHistory
+        .filter(item => {
+          const searchable = [
+            item.service,
+            item.type,
+            item.method,
+            item.amount,
+            item.date
+          ].filter(Boolean).join(' ').toLowerCase();
+          return searchable.includes(query);
+        })
+        .sort((left, right) => {
+          if (sort.startsWith('service')) {
+            const comparison = left.service.localeCompare(right.service);
+            return sort === 'service-desc' ? -comparison : comparison;
+          }
+          if (sort.startsWith('amount')) {
+            const comparison = Number(left.amount || 0) - Number(right.amount || 0);
+            return sort === 'amount-desc' ? -comparison : comparison;
+          }
+          const comparison = new Date(left.date) - new Date(right.date);
+          return sort === 'date-asc' ? comparison : -comparison;
+        });
+
+      emptyEl.textContent = loadedHistory.length === 0
+        ? 'No history recorded yet.'
+        : 'No history matches your search.';
+      emptyEl.classList.toggle('hidden', items.length > 0);
+      listEl.innerHTML = items.map(item => {
+          const isPayment = item.type === 'payment';
+          const label = isPayment ? 'Payment' : 'Cancellation';
+          const details = isPayment
+            ? `${Number(item.amount).toFixed(2)} CHF . ${item.method}`
+            : `Ends ${formatDateText(item.ends_on)}`;
+          return `
+            <article class="bg-white border border-obsidian/10 rounded-2xl px-5 py-4 shadow-card flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-lg ${isPayment ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'} flex items-center justify-center font-mono text-sm">${isPayment ? '✓' : '!'}</span>
+                <div>
+                  <p class="text-sm font-bold text-obsidian">${item.service}</p>
+                  <p class="text-xs text-stone">${label} . ${details}</p>
+                </div>
+              </div>
+              <time class="font-mono text-xs text-stone">${formatDateText(item.date)}</time>
+            </article>
+          `;
+      }).join('');
     }
 
     async function loadNotificationsBanner() {
@@ -1936,6 +2003,18 @@
       }
     }
 
+    async function loadCatalogIntoForm() {
+      try {
+        loadedCatalog = await ApiService.getCatalog();
+        renderPopularPresets('');
+      } catch (err) {
+        loadedCatalog = [];
+        document.getElementById('popular-presets-list').innerHTML =
+          '<div class="p-4 text-xs text-red-700 text-center">Unable to load services from the catalog.</div>';
+        showToast(err.message, true);
+      }
+    }
+
     function closeAllRowMenus() {
       document.querySelectorAll('[id^="row-menu-"]').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.sticky-sub-card.menu-open').forEach(card => card.classList.remove('menu-open'));
@@ -2019,8 +2098,8 @@
     function renderPopularPresets(filterText = '') {
       const container = document.getElementById('popular-presets-list');
       const query = filterText.trim().toLowerCase();
-      const filtered = POPULAR_PRESETS.filter(p =>
-        p.service.toLowerCase().includes(query) || p.category.toLowerCase().includes(query)
+      const filtered = loadedCatalog.filter(p =>
+        p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query)
       );
 
       if (filtered.length === 0) {
@@ -2031,40 +2110,39 @@
       container.innerHTML = filtered.map(preset => `
         <button
           type="button"
-          onclick="applyPopularPreset('${preset.service.replace(/'/g, "\\'")}')"
+          onclick="applyCatalogItem(${preset.id})"
           class="w-full px-4 py-3 hover:bg-alabaster flex items-center justify-between text-left transition-colors group"
         >
           <div class="flex items-center gap-3 min-w-0">
-            <div class="scale-75 origin-left -mr-2">${getBrandLogoHTML(preset.service)}</div>
+            <div class="scale-75 origin-left -mr-2">${getBrandLogoHTML(preset.name)}</div>
             <div class="truncate">
-              <p class="text-xs font-bold text-obsidian group-hover:text-gold-dark transition-colors truncate">${preset.service}</p>
+              <p class="text-xs font-bold text-obsidian group-hover:text-gold-dark transition-colors truncate">${preset.name}</p>
               <p class="font-mono text-[10px] text-stone">${preset.category} . ${preset.billing_period}</p>
             </div>
           </div>
-          <span class="font-mono text-xs font-semibold text-obsidian shrink-0">${preset.price.toFixed(2)} CHF</span>
+          <span class="font-mono text-xs font-semibold text-obsidian shrink-0">${Number(preset.default_price).toFixed(2)} CHF</span>
         </button>
       `).join('');
     }
 
-    function applyPopularPreset(serviceName) {
-      const preset = POPULAR_PRESETS.find(p => p.service === serviceName);
+    function applyCatalogItem(catalogId) {
+      const preset = loadedCatalog.find(p => p.id === Number(catalogId));
       if (!preset) return;
-      document.getElementById('form-service').value = preset.service;
-      const matchCat = loadedCategories.find(c => c.name.toLowerCase() === preset.category.toLowerCase());
-      if (matchCat) {
-        document.getElementById('form-category').value = String(matchCat.id);
-      }
-      document.getElementById('form-price').value = preset.price.toFixed(2);
+      document.getElementById('form-service').value = preset.name;
+      document.getElementById('form-category').value = String(preset.category_id);
+      document.getElementById('form-price').value = Number(preset.default_price).toFixed(2);
       document.getElementById('form-billing-period').value = preset.billing_period;
+      document.getElementById('form-subscription-id').value = String(preset.id);
       document.getElementById('form-is-custom').value = 'false';
 
-      document.getElementById('selected-preset-title').textContent = `${preset.service} (${preset.price.toFixed(2)} CHF / ${preset.billing_period})`;
-      document.getElementById('selected-preset-sub').textContent = `${preset.category} . Preset selected`;
-      document.getElementById('selected-preset-icon').textContent = preset.service.charAt(0).toUpperCase();
+      document.getElementById('selected-preset-title').textContent = `${preset.name} (${Number(preset.default_price).toFixed(2)} CHF / ${preset.billing_period})`;
+      document.getElementById('selected-preset-sub').textContent = `${preset.category} . Catalog service selected`;
+      document.getElementById('selected-preset-icon').textContent = preset.name.charAt(0).toUpperCase();
       closePresetDropdown();
     }
 
     function selectCustomServicePreset() {
+      document.getElementById('form-subscription-id').value = '';
       document.getElementById('form-service').value = '';
       document.getElementById('form-price').value = '';
       document.getElementById('form-is-custom').value = 'true';
@@ -2133,12 +2211,13 @@
         deleteBtn.classList.add('hidden');
 
         document.getElementById('form-sub-id').value = '';
+        document.getElementById('form-subscription-id').value = '';
         document.getElementById('form-service').value = '';
         document.getElementById('form-price').value = '';
         document.getElementById('form-billing-period').value = 'monthly';
         document.getElementById('form-start-date').value = new Date().toISOString().slice(0, 10);
         document.getElementById('form-notification').checked = true;
-        document.getElementById('selected-preset-title').textContent = 'Choose from popular services (Netflix, Spotify, SBB...)';
+        document.getElementById('selected-preset-title').textContent = 'Choose a service from the catalog';
         document.getElementById('selected-preset-sub').textContent = 'Click to open service dropdown list';
         document.getElementById('selected-preset-icon').textContent = '+';
         selectPaymentMode('manual');
@@ -2196,6 +2275,7 @@
       errBanner.classList.add('hidden');
 
       const idVal = document.getElementById('form-sub-id').value;
+      const catalogId = document.getElementById('form-subscription-id').value;
       const service = document.getElementById('form-service').value.trim();
       const category_id = Number(document.getElementById('form-category').value);
       const price = parseFloat(document.getElementById('form-price').value);
@@ -2219,16 +2299,23 @@
           });
           showToast(`${service} updated`);
         } else {
-          await ApiService.createSubscription({
-            service,
-            category_id,
-            price,
-            currency: 'CHF',
-            billing_period,
+          const payload = {
             start_date,
             auto_pay,
             notification_enabled
-          });
+          };
+          if (catalogId) {
+            payload.subscription_id = Number(catalogId);
+          } else {
+            Object.assign(payload, {
+              service,
+              category_id,
+              price,
+              currency: 'CHF',
+              billing_period
+            });
+          }
+          await ApiService.createSubscription(payload);
           showToast(`${service} added to PayAll`);
         }
 
@@ -2381,22 +2468,34 @@
     function switchMainView(viewName) {
       const dash = document.getElementById('view-dashboard');
       const settings = document.getElementById('view-settings');
+      const history = document.getElementById('view-history');
       const btnDash = document.getElementById('nav-btn-dashboard');
       const btnSettings = document.getElementById('nav-btn-settings');
+      const btnHistory = document.getElementById('nav-btn-history');
       const btnAbout = document.getElementById('nav-btn-about');
 
       btnDash.classList.remove('active');
       btnSettings.classList.remove('active');
+      btnHistory.classList.remove('active');
       btnAbout.classList.remove('active');
 
       if (viewName === 'settings') {
         dash.classList.add('hidden');
         settings.classList.remove('hidden');
+        history.classList.add('hidden');
         btnSettings.classList.add('active');
         loadSettingsIntoForm();
         document.getElementById('workspace-anchor').scrollIntoView({ behavior: 'smooth' });
+      } else if (viewName === 'history') {
+        dash.classList.add('hidden');
+        settings.classList.add('hidden');
+        history.classList.remove('hidden');
+        btnHistory.classList.add('active');
+        loadHistory();
+        document.getElementById('workspace-anchor').scrollIntoView({ behavior: 'smooth' });
       } else {
         settings.classList.add('hidden');
+        history.classList.add('hidden');
         dash.classList.remove('hidden');
         btnDash.classList.add('active');
       }
@@ -2427,7 +2526,7 @@
     // 9. SCROLL & INITIALIZATION
     // =========================================================================
     window.addEventListener('DOMContentLoaded', async () => {
-      await loadCategoriesIntoForm();
+      await Promise.all([loadCategoriesIntoForm(), loadCatalogIntoForm()]);
       await loadDashboardSubscriptions();
 
       const navbar = document.getElementById('main-navbar');
