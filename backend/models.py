@@ -62,7 +62,6 @@ class Subscription(SQLModel, table=True):
     category_id: int = Field(foreign_key="category.id", index=True)
     default_price_rappen: int = Field(gt=0)
     billing_period: str
-    default_price_is_sample: bool = False
 
 
 class Payment(SQLModel, table=True):
@@ -165,7 +164,6 @@ class CatalogItem(BaseModel):
     category: str
     default_price: Decimal
     billing_period: Literal["weekly", "monthly", "yearly"]
-    default_price_is_sample: bool
 
     @field_serializer("default_price")
     def serialize_default_price(self, value: Decimal) -> float:

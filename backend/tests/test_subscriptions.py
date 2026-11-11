@@ -83,7 +83,6 @@ def test_catalog_is_seeded_with_defaults(tmp_path):
     assert catalog.status_code == 200
     catalog_items = catalog.json()
     assert len(catalog_items) == 58
-    assert sum(item["default_price_is_sample"] for item in catalog_items) == 55
     netflix = next(item for item in catalog_items if item["name"] == "Netflix")
     assert netflix == {
         "id": 1,
@@ -92,7 +91,6 @@ def test_catalog_is_seeded_with_defaults(tmp_path):
         "category": "Entertainment",
         "default_price": 18.9,
         "billing_period": "monthly",
-        "default_price_is_sample": False,
     }
     assert seeded_subscription["next_charge_date"] == "2026-11-12"
     assert seeded_subscription["payment_status"] == "paid"

@@ -113,9 +113,8 @@ def initialise(engine):
                     connection.exec_driver_sql(
                         """
                         INSERT OR IGNORE INTO subscription (
-                            id, service, category_id, default_price_rappen, billing_period,
-                            default_price_is_sample
-                        ) VALUES (?, ?, ?, ?, ?, 0)
+                            id, service, category_id, default_price_rappen, billing_period
+                        ) VALUES (?, ?, ?, ?, ?)
                         """,
                         (subscription_id, service, category_id, price_rappen, billing_period),
                     )
@@ -128,9 +127,8 @@ def initialise(engine):
                     connection.exec_driver_sql(
                         """
                         INSERT OR IGNORE INTO subscription (
-                            id, name, category_id, default_price_rappen, billing_period,
-                            default_price_is_sample
-                        ) VALUES (?, ?, ?, 999, 'monthly', 1)
+                            id, name, category_id, default_price_rappen, billing_period
+                        ) VALUES (?, ?, ?, 999, 'monthly')
                         """,
                         (subscription_id, service, category_id),
                     )
@@ -143,7 +141,6 @@ def initialise(engine):
     catalog_defaults_need_migration = (
         "default_price_rappen" not in catalog_columns
         or "billing_period" not in catalog_columns
-        or "default_price_is_sample" not in catalog_columns
     )
     if "default_price_rappen" not in catalog_columns:
         with engine.begin() as connection:
@@ -154,11 +151,6 @@ def initialise(engine):
         with engine.begin() as connection:
             connection.exec_driver_sql(
                 "ALTER TABLE subscription ADD COLUMN billing_period VARCHAR NOT NULL DEFAULT 'monthly'"
-            )
-    if "default_price_is_sample" not in catalog_columns:
-        with engine.begin() as connection:
-            connection.exec_driver_sql(
-                "ALTER TABLE subscription ADD COLUMN default_price_is_sample BOOLEAN NOT NULL DEFAULT 1"
             )
     user_subscription_columns = {
         column["name"] for column in inspect(engine).get_columns("usersubscription")
@@ -203,7 +195,6 @@ def initialise(engine):
                         Decimal(str(row["default_price"])) * 100
                     )
                     catalog_entry.billing_period = row["billing_period"]
-                    catalog_entry.default_price_is_sample = row["default_price_is_sample"]
         if catalog_is_empty:
             session.add_all(
                 [
@@ -213,7 +204,6 @@ def initialise(engine):
                         category_id=categories[row["category"]],
                         default_price_rappen=int(Decimal(str(row["default_price"])) * 100),
                         billing_period=row["billing_period"],
-                        default_price_is_sample=row["default_price_is_sample"],
                     )
                     for row in seed["catalog"]
                 ]
@@ -236,7 +226,6 @@ def initialise(engine):
                 category_id=category_id,
                 default_price_rappen=price_rappen,
                 billing_period=billing_period,
-                default_price_is_sample=False,
             )
             session.add(catalog_entry)
             session.flush()

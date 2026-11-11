@@ -262,7 +262,6 @@ def create_subscription(session: Session, payload: SubscriptionInput, today: dat
                 category_id=payload.category_id,
                 default_price_rappen=to_rappen(payload.price),
                 billing_period=payload.billing_period,
-                default_price_is_sample=False,
             )
             try:
                 session.add(details)
@@ -318,7 +317,6 @@ def list_catalog(session: Session) -> list[CatalogItem]:
             category=category.name,
             default_price=from_rappen(subscription.default_price_rappen),
             billing_period=subscription.billing_period,
-            default_price_is_sample=subscription.default_price_is_sample,
         )
         for subscription, category in rows
     ]
