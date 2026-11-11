@@ -1290,6 +1290,9 @@
               </button>
             </div>
           </div>
+          <div id="duplicate-subscription-warning" class="hidden rounded-lg bg-amber-50 border border-amber-300 px-4 py-3 text-xs text-amber-900">
+            You already have this subscription tracked. You can still add another one if needed.
+          </div>
         </div>
 
         <!-- Subscription Form -->
@@ -1316,6 +1319,7 @@
                   type="text"
                   required
                   placeholder="e.g., Netflix"
+                  oninput="renderDuplicateSubscriptionWarning()"
                   class="w-full px-3.5 py-2.5 bg-alabaster border border-obsidian/15 rounded-lg text-xs text-obsidian focus:outline-none focus:border-gold"
                 />
               </div>
@@ -1356,6 +1360,8 @@
                 <label for="form-currency" class="block text-xs font-medium text-obsidian mb-1.5">Currency</label>
                 <select id="form-currency" class="w-full px-3 py-2.5 bg-alabaster border border-obsidian/15 rounded-lg font-mono text-xs text-obsidian focus:outline-none">
                   <option value="CHF">CHF</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
                 </select>
               </div>
             </div>
@@ -2138,6 +2144,7 @@
       document.getElementById('selected-preset-title').textContent = `${preset.name} (${Number(preset.default_price).toFixed(2)} CHF / ${preset.billing_period})`;
       document.getElementById('selected-preset-sub').textContent = `${preset.category} . Catalog service selected`;
       document.getElementById('selected-preset-icon').textContent = preset.name.charAt(0).toUpperCase();
+      renderDuplicateSubscriptionWarning();
       closePresetDropdown();
     }
 
@@ -2149,7 +2156,17 @@
       document.getElementById('selected-preset-title').textContent = 'Custom subscription service';
       document.getElementById('selected-preset-sub').textContent = 'Enter your custom service name and price below';
       document.getElementById('selected-preset-icon').textContent = '+';
+      renderDuplicateSubscriptionWarning();
       document.getElementById('form-service').focus();
+    }
+
+    function renderDuplicateSubscriptionWarning() {
+      const warning = document.getElementById('duplicate-subscription-warning');
+      const serviceName = document.getElementById('form-service').value.trim().toLowerCase();
+      const duplicate = serviceName && loadedSubscriptions.some(subscription =>
+        subscription.service.trim().toLowerCase() === serviceName
+      );
+      warning.classList.toggle('hidden', !duplicate);
     }
 
     // Both cards use identical crisp radio button and emerald ". Enabled" styling
@@ -2214,12 +2231,14 @@
         document.getElementById('form-subscription-id').value = '';
         document.getElementById('form-service').value = '';
         document.getElementById('form-price').value = '';
+        document.getElementById('form-currency').value = 'CHF';
         document.getElementById('form-billing-period').value = 'monthly';
         document.getElementById('form-start-date').value = new Date().toISOString().slice(0, 10);
         document.getElementById('form-notification').checked = true;
         document.getElementById('selected-preset-title').textContent = 'Choose a service from the catalog';
         document.getElementById('selected-preset-sub').textContent = 'Click to open service dropdown list';
         document.getElementById('selected-preset-icon').textContent = '+';
+        renderDuplicateSubscriptionWarning();
         selectPaymentMode('manual');
         renderPopularPresets('');
       } else {
@@ -2256,6 +2275,7 @@
       document.getElementById('form-service').value = sub.service;
       document.getElementById('form-category').value = String(sub.category_id);
       document.getElementById('form-price').value = Number(sub.price).toFixed(2);
+      document.getElementById('form-currency').value = sub.currency || 'CHF';
       document.getElementById('form-billing-period').value = sub.billing_period;
       document.getElementById('form-start-date').value = sub.start_date;
       document.getElementById('form-notification').checked = Boolean(sub.notification_enabled);
@@ -2279,6 +2299,7 @@
       const service = document.getElementById('form-service').value.trim();
       const category_id = Number(document.getElementById('form-category').value);
       const price = parseFloat(document.getElementById('form-price').value);
+      const currency = document.getElementById('form-currency').value;
       const billing_period = document.getElementById('form-billing-period').value;
       const start_date = document.getElementById('form-start-date').value;
       const notification_enabled = document.getElementById('form-notification').checked;
@@ -2291,7 +2312,7 @@
             service,
             category_id,
             price,
-            currency: 'CHF',
+            currency,
             billing_period,
             start_date,
             auto_pay,
@@ -2305,13 +2326,17 @@
             notification_enabled
           };
           if (catalogId) {
-            payload.subscription_id = Number(catalogId);
+            Object.assign(payload, {
+              subscription_id: Number(catalogId),
+              price,
+              billing_period
+            });
           } else {
             Object.assign(payload, {
               service,
               category_id,
               price,
-              currency: 'CHF',
+              currency,
               billing_period
             });
           }

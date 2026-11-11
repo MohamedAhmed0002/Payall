@@ -96,7 +96,7 @@ class SubscriptionInput(BaseModel):
     service: str | None = None
     category_id: int | None = None
     price: Decimal | None = None
-    currency: Literal["CHF"] = "CHF"
+    currency: Literal["CHF", "USD", "EUR"] = "CHF"
     billing_period: Literal["weekly", "monthly", "yearly"] | None = None
     start_date: date
     auto_pay: bool
@@ -120,7 +120,7 @@ class SubscriptionUpdate(BaseModel):
     service: str | None = None
     category_id: int | None = None
     price: Decimal | None = None
-    currency: Literal["CHF"] | None = None
+    currency: Literal["CHF", "USD", "EUR"] | None = None
     billing_period: Literal["weekly", "monthly", "yearly"] | None = None
     start_date: date | None = None
     auto_pay: bool | None = None
@@ -141,7 +141,7 @@ class SubscriptionOutput(BaseModel):
     service: str
     category_id: int
     price: Decimal
-    currency: Literal["CHF"]
+    currency: Literal["CHF", "USD", "EUR"]
     billing_period: Literal["weekly", "monthly", "yearly"]
     start_date: date
     auto_pay: bool

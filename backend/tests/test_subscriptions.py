@@ -124,6 +124,41 @@ def test_create_subscription_and_updated_total(tmp_path):
         assert len(client.get("/catalog").json()) == 58
 
 
+def test_create_catalog_subscription_uses_custom_price(tmp_path):
+    with client_for(tmp_path) as client:
+        response = client.post(
+            "/subscriptions",
+            json={
+                "subscription_id": 1,
+                "price": 25.0,
+                "billing_period": "yearly",
+                "start_date": "2026-01-15",
+                "auto_pay": False,
+            },
+        )
+
+    assert response.status_code == 201
+    assert response.json()["price"] == 25.0
+    assert response.json()["billing_period"] == "yearly"
+    with Session(client.app.state.engine) as session:
+        user_subscription = session.exec(
+            select(UserSubscription).where(UserSubscription.id == response.json()["id"])
+        ).one()
+        assert user_subscription.price_rappen == 2500
+        assert user_subscription.billing_period == "yearly"
+
+
+def test_create_subscription_accepts_usd_currency(tmp_path):
+    with client_for(tmp_path) as client:
+        response = client.post(
+            "/subscriptions",
+            json=valid_payload(currency="USD"),
+        )
+
+    assert response.status_code == 201
+    assert response.json()["currency"] == "USD"
+
+
 def test_create_custom_subscription(tmp_path):
     with client_for(tmp_path) as client:
         response = client.post(
