@@ -2134,6 +2134,7 @@
     function applyCatalogItem(catalogId) {
       const preset = loadedCatalog.find(p => p.id === Number(catalogId));
       if (!preset) return;
+      document.getElementById('form-error-banner').classList.add('hidden');
       document.getElementById('form-service').value = preset.name;
       document.getElementById('form-category').value = String(preset.category_id);
       document.getElementById('form-price').value = Number(preset.default_price).toFixed(2);
