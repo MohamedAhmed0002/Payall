@@ -100,4 +100,5 @@ def test_autopay_activation_does_not_hide_pending_period(tmp_path):
     with client_for(tmp_path / "payall.sqlite") as client:
         assert client.patch("/subscriptions/2", json={"auto_pay": True}).status_code == 200
         items = client.get("/notifications").json()["items"]
-        assert "SBB Halbtax" not in [item["service"] for item in items]
+        assert [item["service"] for item in items] == ["SBB Halbtax"]
+        assert items[0]["reason"] == "payment_overdue"

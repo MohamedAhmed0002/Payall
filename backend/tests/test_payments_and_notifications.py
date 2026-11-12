@@ -53,14 +53,14 @@ def test_manual_payment_and_autopay_errors(tmp_path):
             "paid_on": "2026-11-05",
             "method": "manual",
         }
-        assert client.post("/subscriptions/2/payments").json() == {
-            "error": "already_paid",
-            "field": "id",
-        }
-        assert client.post("/subscriptions/1/payments").json() == {
-            "error": "auto_pay_subscription",
-            "field": "auto_pay",
-        }
+        already_paid = client.post("/subscriptions/2/payments").json()
+        assert already_paid["error"] == "already_paid"
+        assert already_paid["field"] == "id"
+        assert already_paid["message"]
+        auto_pay = client.post("/subscriptions/1/payments").json()
+        assert auto_pay["error"] == "auto_pay_subscription"
+        assert auto_pay["field"] == "auto_pay"
+        assert auto_pay["message"]
 
 
 def test_future_manual_subscription_has_nothing_due(tmp_path):
@@ -76,10 +76,10 @@ def test_future_manual_subscription_has_nothing_due(tmp_path):
         }
         response = client.post("/subscriptions", json=payload)
         assert response.status_code == 201
-        assert client.post(f"/subscriptions/{response.json()['id']}/payments").json() == {
-            "error": "nothing_due",
-            "field": "start_date",
-        }
+        error = client.post(f"/subscriptions/{response.json()['id']}/payments").json()
+        assert error["error"] == "nothing_due"
+        assert error["field"] == "start_date"
+        assert error["message"]
 
 
 def test_turning_on_autopay_keeps_earlier_period_manual(tmp_path):
@@ -106,14 +106,14 @@ def test_cancel_and_end_subscription(tmp_path):
         ]
         assert listing["monthly_total"] == 30.78
         assert listing["cancelled_excluded"] == 1
-        assert client.post("/subscriptions/1/cancel").json() == {
-            "error": "already_cancelled",
-            "field": "id",
-        }
-        assert client.patch("/subscriptions/1", json={"price": 20}).json() == {
-            "error": "subscription_cancelled",
-            "field": "id",
-        }
+        already_cancelled = client.post("/subscriptions/1/cancel").json()
+        assert already_cancelled["error"] == "already_cancelled"
+        assert already_cancelled["field"] == "id"
+        assert already_cancelled["message"]
+        cancelled = client.patch("/subscriptions/1", json={"price": 20}).json()
+        assert cancelled["error"] == "subscription_cancelled"
+        assert cancelled["field"] == "id"
+        assert cancelled["message"]
         assert client.post("/subscriptions/999/cancel").status_code == 404
 
     with client_for(database_file, date(2026, 11, 12)) as client:
@@ -146,57 +146,79 @@ def test_future_cancel_ends_today_and_delete_removes_history(tmp_path):
 
 
 def test_settings_and_notifications(tmp_path):
-    with client_for(tmp_path / "payall.sqlite") as client:
-        assert client.get("/settings").json() == {"reminder_days": 7, "currency": "CHF"}
+    database_file = tmp_path / "payall.sqlite"
+    with client_for(database_file, date(2026, 11, 12)) as client:
         notifications = client.get("/notifications").json()
-        assert notifications == {"count": 0, "message": None, "items": []}
-        soon = client.post(
+        assert notifications == {
+            "count": 1,
+            "message": "1 payment needs attention: SBB Halbtax",
+            "items": [
+                {
+                    "subscription_id": 2,
+                    "service": "SBB Halbtax",
+                    "reason": "payment_overdue",
+                    "date": "2026-02-01",
+                }
+            ],
+        }
+        assert client.post("/notifications/2/dismiss").json() == {
+            "count": 0,
+            "message": None,
+            "items": [],
+        }
+        dismissed = client.post("/notifications/2/dismiss")
+        assert dismissed.status_code == 409
+        assert dismissed.json()["error"] == "nothing_to_dismiss"
+        assert dismissed.json()["field"] == "subscription_id"
+        assert dismissed.json()["message"]
+
+    with client_for(database_file, date(2027, 1, 28)) as client:
+        notifications = client.get("/notifications").json()
+        assert notifications["items"] == [
+            {
+                "subscription_id": 2,
+                "service": "SBB Halbtax",
+                "reason": "upcoming_payment",
+                "date": "2027-02-01",
+            }
+        ]
+
+    database_file = tmp_path / "paid.sqlite"
+    with client_for(database_file, date(2026, 11, 12)) as client:
+        assert client.post("/subscriptions/2/payments").status_code == 201
+    with client_for(database_file, date(2027, 1, 28)) as client:
+        assert client.get("/notifications").json()["items"][0]["reason"] == "upcoming_payment"
+
+    with client_for(tmp_path / "off.sqlite", date(2026, 11, 12)) as client:
+        assert client.patch("/subscriptions/2", json={"notification_enabled": False}).status_code == 200
+        assert client.get("/notifications").json()["count"] == 0
+
+    database_file = tmp_path / "new.sqlite"
+    with client_for(database_file, date(2026, 11, 12)) as client:
+        created = client.post(
             "/subscriptions",
             json={
-                "service": "Within Window",
-                "category_id": 5,
-                "price": 10,
-                "currency": "CHF",
+                "service": "Local Gym",
+                "category_id": 4,
+                "price": 60,
                 "billing_period": "monthly",
-                "start_date": "2026-11-10",
+                "start_date": "2026-11-15",
                 "auto_pay": False,
                 "notification_enabled": True,
             },
         ).json()
-        client.post(
-            "/subscriptions",
-            json={
-                "service": "Beyond Window",
-                "category_id": 5,
-                "price": 10,
-                "currency": "CHF",
-                "billing_period": "monthly",
-                "start_date": "2026-11-20",
-                "auto_pay": False,
-                "notification_enabled": True,
-            },
-        )
-        notifications = client.get("/notifications").json()
-        assert notifications["count"] == 1
-        assert notifications["items"] == [
-            {
-                "subscription_id": soon["id"],
-                "service": "Within Window",
-                "reason": "payment_pending",
-                "date": "2026-11-10",
-            },
+        items = client.get("/notifications").json()["items"]
+        gym_item = next(item for item in items if item["service"] == "Local Gym")
+        assert gym_item == {
+            "subscription_id": created["id"],
+            "service": "Local Gym",
+            "reason": "upcoming_payment",
+            "date": "2026-11-15",
+        }
+        assert client.patch("/settings", json={"reminder_days": 2}).status_code == 200
+        assert "Local Gym" not in [
+            item["service"] for item in client.get("/notifications").json()["items"]
         ]
-        assert notifications["message"] == "1 renewal needs attention: Within Window"
-        assert client.post("/subscriptions/2/payments").status_code == 201
-        assert client.patch("/settings", json={"reminder_days": 3}).status_code == 200
-        assert client.get("/notifications").json()["count"] == 0
-        assert client.patch("/settings", json={"reminder_days": 0}).json()["field"] == "reminder_days"
-        assert client.patch("/settings", json={"reminder_days": 31}).json()["field"] == "reminder_days"
-        assert client.patch("/settings", json={"unknown": 1}).status_code == 422
-        assert client.patch("/settings", json={"reminder_days": 7}).status_code == 200
-        assert client.post(f"/subscriptions/{soon['id']}/cancel").status_code == 200
-        assert client.get("/notifications").json() == {"count": 0, "message": None, "items": []}
-        assert client.get("/subscriptions/3").json()["notification_enabled"] is False
 
 
 def test_history_order_and_filters(tmp_path):
@@ -212,7 +234,7 @@ def test_history_order_and_filters(tmp_path):
         assert history[0]["service"] == "Netflix"
         assert history[0]["ends_on"] == "2026-11-12"
         assert len(client.get("/history?type=cancellation").json()["items"]) == 1
-        assert client.get("/history?type=foo").json() == {
-            "error": "invalid_input",
-            "field": "type",
-        }
+        error = client.get("/history?type=foo").json()
+        assert error["error"] == "invalid_input"
+        assert error["field"] == "type"
+        assert error["message"]

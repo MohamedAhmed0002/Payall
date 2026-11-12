@@ -15,6 +15,7 @@ from models import (
     HistoryPayment,
     NotificationItem,
     NotificationOutput,
+    NextChargeOutput,
     SettingsOutput,
     SettingsUpdate,
     Subscription,
@@ -36,6 +37,28 @@ class PayallError(Exception):
         self.field = field
         self.status = status
         super().__init__(code)
+
+
+PAYALL_ERROR_MESSAGES = {
+    "price_must_be_positive": "Price must be greater than 0.",
+    "price_too_high": "Price must not exceed 100000.00.",
+    "price_required": "Price is required.",
+    "billing_period_required": "Billing period is required.",
+    "service_name_required": "Service name is required.",
+    "service_name_too_long": "Service name must be 100 characters or fewer.",
+    "category_not_found": "The selected category was not found.",
+    "catalog_item_not_found": "The selected catalog item was not found.",
+    "start_date_out_of_range": "Start date is outside the allowed range.",
+    "subscription_not_found": "Subscription not found.",
+    "subscription_cancelled": "This subscription is cancelled.",
+    "already_cancelled": "This subscription is already cancelled.",
+    "already_paid": "This period is already marked as paid.",
+    "auto_pay_subscription": "Automatic payments are enabled for this subscription.",
+    "nothing_due": "There is no payment due for this subscription.",
+    "nothing_to_dismiss": "There is no current notification to dismiss.",
+    "user_not_found": "User not found.",
+    "invalid_input": "The input is invalid.",
+}
 
 
 def _add_months(value: date, months: int) -> date:
@@ -329,28 +352,64 @@ def list_notifications(session: Session, today: date) -> NotificationOutput:
     reminder_end = today + timedelta(days=settings.reminder_days)
     for subscription in subscriptions:
         output = _to_output(session, subscription, today)
-        if (
-            output.status != "active"
-            or output.payment_status != "pending"
-            or output.next_charge_date is None
-            or not today <= output.next_charge_date <= reminder_end
-        ):
+        if output.status != "active":
+            continue
+        current_period = _period_start(subscription, today)
+        autopay_covers_current = (
+            current_period is not None
+            and subscription.auto_pay
+            and subscription.auto_pay_since is not None
+            and current_period >= subscription.auto_pay_since
+        )
+        overdue_date = None
+        if current_period is not None and not autopay_covers_current:
+            if output.payment_status == "pending":
+                overdue_date = current_period
+        notification_date = (
+            overdue_date
+            if overdue_date != subscription.reminder_dismissed_for
+            else None
+        )
+        reason = "payment_overdue" if notification_date is not None else None
+        if notification_date is None and output.next_charge_date is not None:
+            if today <= output.next_charge_date <= reminder_end and not autopay_covers_current:
+                if output.next_charge_date != subscription.reminder_dismissed_for:
+                    notification_date = output.next_charge_date
+                    reason = "upcoming_payment"
+        if notification_date is None or notification_date == subscription.reminder_dismissed_for:
             continue
         items.append(
             NotificationItem(
                 subscription_id=subscription.id,
                 service=_service_name(session, subscription),
-                reason="payment_pending",
-                date=output.next_charge_date,
+                reason=reason,
+                date=notification_date,
             )
         )
     names = ", ".join(item.service for item in items)
     message = None
     if items:
-        noun = "renewal" if len(items) == 1 else "renewals"
+        noun = "payment" if len(items) == 1 else "payments"
         verb = "needs" if len(items) == 1 else "need"
         message = f"{len(items)} {noun} {verb} attention: {names}"
     return NotificationOutput(count=len(items), message=message, items=items)
+
+
+def dismiss_notification(
+    session: Session, subscription_id: int, today: date
+) -> NotificationOutput:
+    subscription = get_own_subscription(session, subscription_id)
+    notifications = list_notifications(session, today)
+    current = next(
+        (item for item in notifications.items if item.subscription_id == subscription.id),
+        None,
+    )
+    if current is None:
+        raise PayallError("nothing_to_dismiss", "subscription_id", status=409)
+    subscription.reminder_dismissed_for = current.date
+    session.add(subscription)
+    session.commit()
+    return list_notifications(session, today)
 
 
 def list_history(session: Session, event_type: str | None, today: date) -> HistoryOutput:
@@ -465,10 +524,41 @@ def list_subscriptions(
         ),
         Decimal(0),
     ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    annual_total = sum(
+        (
+            item.price
+            * {"monthly": Decimal(12), "yearly": Decimal(1), "weekly": Decimal(52)}[
+                item.billing_period
+            ]
+            for item in active
+        ),
+        Decimal(0),
+    ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    next_charge = min(
+        (
+            item
+            for item in visible
+            if item.status == "active" and item.next_charge_date is not None
+        ),
+        key=lambda item: (item.next_charge_date, item.id),
+        default=None,
+    )
     user = session.get(User, CURRENT_USER_ID)
     return SubscriptionList(
         subscriptions=subscriptions,
         monthly_total=monthly_total,
+        annual_total=annual_total,
+        next_charge=(
+            NextChargeOutput(
+                subscription_id=next_charge.id,
+                service=next_charge.service,
+                date=next_charge.next_charge_date,
+                amount=next_charge.price,
+                currency=next_charge.currency,
+            )
+            if next_charge is not None
+            else None
+        ),
         currency=user.currency if user else "CHF",
         cancelled_excluded=sum(item.status == "cancelled" for item in visible),
     )

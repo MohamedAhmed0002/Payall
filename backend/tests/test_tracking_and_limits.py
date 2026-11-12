@@ -45,10 +45,10 @@ def test_period_before_tracking_is_assumed_paid(tmp_path):
             item for item in client.get("/notifications").json()["items"]
             if item["service"] == "Manual Plan"
         ]
-        assert client.post(f"/subscriptions/{created['id']}/payments").json() == {
-            "error": "already_paid",
-            "field": "id",
-        }
+        error = client.post(f"/subscriptions/{created['id']}/payments").json()
+        assert error["error"] == "already_paid"
+        assert error["field"] == "id"
+        assert error["message"]
 
     with client_for(database_file, date(2026, 12, 1)) as client:
         assert client.get(f"/subscriptions/{created['id']}").json()["payment_status"] == "pending"
@@ -86,7 +86,18 @@ def test_seed_history_and_notifications_exclude_paid_and_out_of_window(tmp_path)
         assert len([item for item in payments if item["service"] == "Spotify"]) == 14
         assert not [item for item in payments if item["service"] == "SBB Halbtax"]
         notifications = client.get("/notifications").json()
-        assert notifications == {"count": 0, "message": None, "items": []}
+        assert notifications == {
+            "count": 1,
+            "message": "1 payment needs attention: SBB Halbtax",
+            "items": [
+                {
+                    "subscription_id": 2,
+                    "service": "SBB Halbtax",
+                    "reason": "payment_overdue",
+                    "date": "2026-02-01",
+                }
+            ],
+        }
 
 
 def test_search_percent_is_literal_and_sort_validation_remains(tmp_path):
@@ -106,22 +117,16 @@ def test_search_percent_is_literal_and_sort_validation_remains(tmp_path):
 
 def test_post_input_limits(tmp_path):
     with client_for(tmp_path / "payall.sqlite") as client:
-        assert client.post(
-            "/subscriptions",
-            json=manual_payload(service="x" * 101),
-        ).json() == {"error": "service_name_too_long", "field": "service"}
-        assert client.post(
-            "/subscriptions",
-            json=manual_payload(price=100000.01),
-        ).json() == {"error": "price_too_high", "field": "price"}
-        assert client.post(
-            "/subscriptions",
-            json=manual_payload(start_date="1999-12-31"),
-        ).json() == {"error": "start_date_out_of_range", "field": "start_date"}
-        assert client.post(
-            "/subscriptions",
-            json=manual_payload(start_date="2027-11-06"),
-        ).json() == {"error": "start_date_out_of_range", "field": "start_date"}
+        for payload, error_code, field in (
+            (manual_payload(service="x" * 101), "service_name_too_long", "service"),
+            (manual_payload(price=100000.01), "price_too_high", "price"),
+            (manual_payload(start_date="1999-12-31"), "start_date_out_of_range", "start_date"),
+            (manual_payload(start_date="2027-11-06"), "start_date_out_of_range", "start_date"),
+        ):
+            error = client.post("/subscriptions", json=payload).json()
+            assert error["error"] == error_code
+            assert error["field"] == field
+            assert error["message"]
 
 
 def test_patch_input_limits(tmp_path):
@@ -132,7 +137,7 @@ def test_patch_input_limits(tmp_path):
             ("start_date", "1999-12-31", "start_date_out_of_range"),
             ("start_date", "2027-11-06", "start_date_out_of_range"),
         ):
-            assert client.patch("/subscriptions/2", json={field: value}).json() == {
-                "error": error,
-                "field": field,
-            }
+            response = client.patch("/subscriptions/2", json={field: value}).json()
+            assert response["error"] == error
+            assert response["field"] == field
+            assert response["message"]

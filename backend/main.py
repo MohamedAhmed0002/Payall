@@ -26,6 +26,7 @@ from models import (
 )
 from service import (
     PayallError,
+    PAYALL_ERROR_MESSAGES,
     create_subscription,
     delete_subscription,
     edit_subscription,
@@ -34,6 +35,7 @@ from service import (
     list_catalog,
     mark_subscription_paid,
     cancel_subscription,
+    dismiss_notification,
     read_subscription,
     list_notifications,
     list_history,
@@ -69,7 +71,11 @@ def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> 
     async def payall_error_handler(_request: Request, error: PayallError):
         return JSONResponse(
             status_code=error.status,
-            content={"error": error.code, "field": error.field},
+            content={
+                "error": error.code,
+                "field": error.field,
+                "message": PAYALL_ERROR_MESSAGES[error.code],
+            },
         )
 
     @app.exception_handler(RequestValidationError)
@@ -176,6 +182,21 @@ def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> 
     )
     def get_notifications(session: DatabaseSession):
         return list_notifications(session, today())
+
+    @app.post(
+        "/notifications/{subscription_id}/dismiss",
+        response_model=NotificationOutput,
+        tags=["Notifications"],
+        operation_id="dismissNotification",
+        summary="Dismiss a notification",
+        responses={
+            404: {"model": Error, "description": "Subscription not found"},
+            409: {"model": Error, "description": "No current notification to dismiss"},
+            422: {"model": Error, "description": "Invalid input"},
+        },
+    )
+    def post_dismiss_notification(subscription_id: int, session: DatabaseSession):
+        return dismiss_notification(session, subscription_id, today())
 
     @app.get(
         "/history",

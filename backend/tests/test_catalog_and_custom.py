@@ -9,13 +9,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from main import create_app
 from models import UserSubscription
+from service import PAYALL_ERROR_MESSAGES
 
 
 TODAY = date(2026, 11, 5)
 
 
-def client_for(database_file: Path) -> TestClient:
-    return TestClient(create_app(database_file, today=lambda: TODAY))
+def client_for(database_file: Path, current_date: date = TODAY) -> TestClient:
+    return TestClient(create_app(database_file, today=lambda: current_date))
 
 
 def custom_payload(**overrides):
@@ -32,7 +33,7 @@ def custom_payload(**overrides):
 
 
 def test_catalog_subscription_uses_catalog_defaults(tmp_path):
-    with client_for(tmp_path / "payall.sqlite") as client:
+    with client_for(tmp_path / "payall.sqlite", date(2026, 11, 12)) as client:
         response = client.post(
             "/subscriptions",
             json={"subscription_id": 1, "start_date": "2026-01-15", "auto_pay": False},
@@ -77,15 +78,15 @@ def test_custom_subscription_requires_price_billing_period_and_service(tmp_path)
             "/subscriptions", json=custom_payload(service=None)
         )
 
-    assert missing_price.json() == {"error": "price_required", "field": "price"}
-    assert missing_billing_period.json() == {
-        "error": "billing_period_required",
-        "field": "billing_period",
-    }
-    assert missing_service.json() == {
-        "error": "service_name_required",
-        "field": "service",
-    }
+    assert missing_price.json()["error"] == "price_required"
+    assert missing_price.json()["field"] == "price"
+    assert missing_price.json()["message"]
+    assert missing_billing_period.json()["error"] == "billing_period_required"
+    assert missing_billing_period.json()["field"] == "billing_period"
+    assert missing_billing_period.json()["message"]
+    assert missing_service.json()["error"] == "service_name_required"
+    assert missing_service.json()["field"] == "service"
+    assert missing_service.json()["message"]
     assert missing_price.status_code == missing_billing_period.status_code == 422
     assert missing_service.status_code == 422
 
@@ -109,10 +110,9 @@ def test_unknown_catalog_subscription_id_is_invalid_input(tmp_path):
         )
 
     assert response.status_code == 422
-    assert response.json() == {
-        "error": "catalog_item_not_found",
-        "field": "subscription_id",
-    }
+    assert response.json()["error"] == "catalog_item_not_found"
+    assert response.json()["field"] == "subscription_id"
+    assert response.json()["message"]
 
 
 def test_listing_does_not_change_user_subscription_rows(tmp_path):
@@ -147,3 +147,44 @@ def test_seed_monthly_total_is_unchanged(tmp_path):
 
     assert response.status_code == 200
     assert response.json()["monthly_total"] == 49.68
+
+
+def test_dashboard_summary_cards_use_all_active_subscriptions(tmp_path):
+    with client_for(tmp_path / "payall.sqlite", date(2026, 11, 12)) as client:
+        response = client.get("/subscriptions")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["annual_total"] == 596.2
+    assert body["next_charge"] == {
+        "subscription_id": 1,
+        "service": "Netflix",
+        "date": "2026-11-12",
+        "amount": 18.9,
+        "currency": "CHF",
+    }
+
+
+def test_every_payall_error_code_has_a_user_message():
+    expected_codes = {
+        "price_must_be_positive",
+        "price_too_high",
+        "price_required",
+        "billing_period_required",
+        "service_name_required",
+        "service_name_too_long",
+        "category_not_found",
+        "catalog_item_not_found",
+        "start_date_out_of_range",
+        "subscription_not_found",
+        "subscription_cancelled",
+        "already_cancelled",
+        "already_paid",
+        "auto_pay_subscription",
+        "nothing_due",
+        "nothing_to_dismiss",
+        "user_not_found",
+        "invalid_input",
+    }
+    assert expected_codes <= PAYALL_ERROR_MESSAGES.keys()
+    assert all(PAYALL_ERROR_MESSAGES[code] != code for code in expected_codes)

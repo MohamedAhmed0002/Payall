@@ -239,6 +239,11 @@ and one year after today. The `subscription` table is the seeded service catalog
 suggested default price and billing period that the user may override. Catalog
 prices are suggestions and may be out of date. Custom subscriptions are private
 user rows with no catalog link. Calculated values are never stored.
+Dashboard summaries include `monthly_total`, `annual_total` (monthly costs ×12,
+yearly costs ×1 and weekly costs ×52) and the next active charge, calculated with
+decimal arithmetic from Rappen and rounded to two decimals. These summaries ignore
+the search filter. Every business-rule error response contains `error`, `field` and
+a short user-facing `message`.
 The API returns only the authenticated user's subscriptions. Search and sorting are
 handled by query parameters, and notification activation is updated through the same
 partial-update operation as other editable fields.
@@ -251,7 +256,7 @@ outside this milestone.
 |---|---|---|---|---|---|---|
 | Log in | `POST` | `/login` | `{ "email": "lena.mueller@example.com", "password": "example-password" }` | `200 OK` — `{ "access_token": "<token>", "user": { "id": 1, "email": "lena.mueller@example.com" } }` | `401 Unauthorized` — `{ "error": "invalid_credentials" }` | How long should the bearer token remain valid, and do we need logout or refresh-token operations? |
 | Browse services | `GET` | `/catalog` | No request body | `200 OK` — catalog entries with `id`, `name`, `category_id`, `category`, `default_price` and `billing_period` | – | Prices and billing periods come from the seeded catalog. |
-| See, search and sort subscriptions | `GET` | `/subscriptions?search=netflix&sort=next_charge_date&order=asc` | Optional parameters: `search` (case-insensitive substring of service or category), `sort` (`next_charge_date`, `price`, `service`) and `order` (`asc`, `desc`). | `200 OK` — `{ "subscriptions": [ ... ], "monthly_total": 49.68, "currency": "CHF", "cancelled_excluded": 0 }` | `422 Unprocessable Entity` — `{ "error": "invalid_input", "field": "sort" }` | Search is case-insensitive and matches the service or category name. No pagination: a personal subscription list stays short. The monthly total always includes all active subscriptions. |
+| See, search and sort subscriptions | `GET` | `/subscriptions?search=netflix&sort=next_charge_date&order=asc` | Optional parameters: `search` (case-insensitive substring of service or category), `sort` (`next_charge_date`, `price`, `service`) and `order` (`asc`, `desc`). | `200 OK` — `{ "subscriptions": [ ... ], "monthly_total": 49.68, "annual_total": 596.20, "next_charge": { "subscription_id": 1, "service": "Netflix", "date": "2026-11-12", "amount": 18.90, "currency": "CHF" }, "currency": "CHF", "cancelled_excluded": 0 }` | `422 Unprocessable Entity` — `{ "error": "invalid_input", "field": "sort", "message": "The input is invalid." }` | Summary cards always include all active subscriptions, even when search filters the list. |
 | Add a subscription | `POST` | `/subscriptions` | Catalog: `{ "subscription_id": 1, "start_date": "2025-09-12", "auto_pay": false }`; custom: `{ "service": "Local Gym", "category_id": 4, "price": 60, "billing_period": "monthly", "start_date": "2025-09-12", "auto_pay": false }` | `201 Created` — catalog values default when omitted and user values override them; custom subscriptions require service, category, price and billing period | `422 Unprocessable Entity` — `{ "error": "catalog_item_not_found", "field": "subscription_id" }`, `{ "error": "price_required", "field": "price" }`, or `{ "error": "billing_period_required", "field": "billing_period" }` | Custom subscriptions do not create catalog rows. |
 | Read one subscription | `GET` | `/subscriptions/{id}` | No request body. Example path: `/subscriptions/1` | `200 OK` — subscription object | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` | – |
 | List categories | `GET` | `/categories` | No request body | `200 OK` — ordered list of `{ "id": 1, "name": "Entertainment" }` objects | – | The frontend uses this list for the category dropdown. |
@@ -261,11 +266,15 @@ outside this milestone.
 | Remove a subscription | `DELETE` | `/subscriptions/{id}` | No request body. Example path: `/subscriptions/1` | `204 No Content` | `404 Not Found` — `{ "error": "subscription_not_found", "field": "id" }` | Deletion is permanent and also removes the subscription's payments; use cancel to keep the history. |
 | Read settings | `GET` | `/settings` | No request body | `200 OK` — `{ "reminder_days": 7, "currency": "CHF" }` | – | – |
 | Update reminder timing | `PATCH` | `/settings` | `{ "reminder_days": 3 }` | `200 OK` — updated settings | `422 Unprocessable Entity` — `{ "error": "invalid_input", "field": "reminder_days" }` | – |
-| List in-app notifications | `GET` | `/notifications` | No request body | `200 OK` — calculated renewal reminders and pending manual payments | – | – |
+| List in-app notifications | `GET` | `/notifications` | No request body | `200 OK` — manual-payment notifications with `payment_overdue` or `upcoming_payment`, combined into one message | – | Only enabled, active subscriptions whose current period is not covered by autopay are considered. Overdue payments take priority; dismissed dates are hidden until a new charge date. |
+| Dismiss a notification | `POST` | `/notifications/{subscription_id}/dismiss` | No request body | `200 OK` — updated notification list | `404 Not Found` — subscription not found; `409 Conflict` — `{ "error": "nothing_to_dismiss", "field": "subscription_id", "message": "There is no current notification to dismiss." }` | Stores the displayed notification date for that subscription. |
 | List payment history | `GET` | `/history` | Optional `type=payment` or `type=cancellation` | `200 OK` — newest payment and cancellation events first | `422 Unprocessable Entity` — `{ "error": "invalid_input", "field": "type" }` | – |
 
-For the list operation, `monthly_total` is calculated by the API from each subscription's
-`price` and `billing_period`; for the three seeded subscriptions it is `49.68` CHF.
+For the list operation, `monthly_total` and `annual_total` are calculated by the API from each
+subscription's Rappen price and `billing_period`; for the three seeded subscriptions they are
+`49.68` CHF and `596.20` CHF. Notifications only cover manual or not-yet-autopay-covered
+periods, and a dismissal applies until the next charge date. All API business-rule errors
+include a short English `message` alongside `error` and `field`.
 Currency conversion is deferred until currencies beyond CHF are supported. Duplicate services are allowed because a user
 may have more than one plan, but the UI should warn before creating an apparent duplicate.
 
@@ -298,11 +307,13 @@ In code, we use the ORM **SQLModel** (built on SQLAlchemy), following the
 | `user` | `id`, `name`, `email`, `currency`, `reminder_days`, `created_at` | One user has many subscriptions |
 | `category` | `id`, `name` | Fixed unique category list |
 | `subscription` | `id`, `name`, `category_id`, `default_price_rappen`, `billing_period` | Catalog with suggested default price and billing period; `category_id` → `category.id` |
-| `usersubscription` | `id`, `user_id`, `service`, `category_id`, `subscription_id`, `price_rappen`, `currency`, `billing_period`, `start_date`, `tracked_since`, `auto_pay`, `auto_pay_since`, `cancelled_at`, `ends_on`, `notification_enabled` | User-owned data; `user_id` → `user.id`, `category_id` → `category.id`, optional `subscription_id` → `subscription.id`; calculated values are never stored |
+| `usersubscription` | `id`, `user_id`, `service`, `category_id`, `subscription_id`, `price_rappen`, `currency`, `billing_period`, `start_date`, `tracked_since`, `auto_pay`, `auto_pay_since`, `cancelled_at`, `ends_on`, `notification_enabled`, `reminder_dismissed_for` | User-owned data; `user_id` → `user.id`, `category_id` → `category.id`, optional `subscription_id` → `subscription.id`; calculated values are never stored |
 | `payment` | `id`, `subscription_id`, `period_start`, `amount_rappen`, `paid_on`, `method` | `subscription_id` → `usersubscription.id` |
 
-`next_charge_date`, `payment_status` and `status` are refreshed from the user's
-subscription dates and payment history when subscription data is read.
+`next_charge_date`, `payment_status`, `status`, `monthly_total`, `annual_total`,
+`next_charge` and notification items are calculated from the user's subscription dates
+and payment history when data is read. Only real payments and notification dismissal
+dates are persisted.
 
 SQLite keeps the whole database in one local file, which is enough for development and the
 course demo. Moving to a server database (e.g. PostgreSQL) later would mainly change the

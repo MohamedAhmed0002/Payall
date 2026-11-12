@@ -210,7 +210,9 @@ def test_edit_subscription_rejects_invalid_price(tmp_path):
     with client_for(tmp_path) as client:
         response = client.patch("/subscriptions/1", json={"price": 0})
     assert response.status_code == 422
-    assert response.json() == {"error": "price_must_be_positive", "field": "price"}
+    assert response.json()["error"] == "price_must_be_positive"
+    assert response.json()["field"] == "price"
+    assert response.json()["message"]
 
 
 def test_patch_rejects_is_custom(tmp_path):
@@ -224,7 +226,9 @@ def test_unknown_category_is_rejected(tmp_path):
     with client_for(tmp_path) as client:
         response = client.post("/subscriptions", json=valid_payload(category_id=999))
     assert response.status_code == 422
-    assert response.json() == {"error": "category_not_found", "field": "category_id"}
+    assert response.json()["error"] == "category_not_found"
+    assert response.json()["field"] == "category_id"
+    assert response.json()["message"]
 
 
 def test_read_subscription(tmp_path):
@@ -232,7 +236,9 @@ def test_read_subscription(tmp_path):
         assert client.get("/subscriptions/1").json()["service"] == "Netflix"
         response = client.get("/subscriptions/999")
     assert response.status_code == 404
-    assert response.json() == {"error": "subscription_not_found", "field": "id"}
+    assert response.json()["error"] == "subscription_not_found"
+    assert response.json()["field"] == "id"
+    assert response.json()["message"]
 
 
 def test_edit_subscription_plan_change_starts_at_next_charge(tmp_path):
@@ -289,7 +295,9 @@ def test_delete_subscription_returns_not_found_for_missing_subscription(tmp_path
     with client_for(tmp_path) as client:
         response = client.delete("/subscriptions/999")
     assert response.status_code == 404
-    assert response.json() == {"error": "subscription_not_found", "field": "id"}
+    assert response.json()["error"] == "subscription_not_found"
+    assert response.json()["field"] == "id"
+    assert response.json()["message"]
 
 
 def test_rejects_non_positive_prices(tmp_path):
@@ -297,14 +305,18 @@ def test_rejects_non_positive_prices(tmp_path):
         for price in (0, -5):
             response = client.post("/subscriptions", json=valid_payload(price=price))
             assert response.status_code == 422
-            assert response.json() == {"error": "price_must_be_positive", "field": "price"}
+            assert response.json()["error"] == "price_must_be_positive"
+            assert response.json()["field"] == "price"
+            assert response.json()["message"]
 
 
 def test_rejects_blank_service(tmp_path):
     with client_for(tmp_path) as client:
         response = client.post("/subscriptions", json=valid_payload(service="   "))
     assert response.status_code == 422
-    assert response.json() == {"error": "service_name_required", "field": "service"}
+    assert response.json()["error"] == "service_name_required"
+    assert response.json()["field"] == "service"
+    assert response.json()["message"]
 
 
 def test_rejects_invalid_billing_period(tmp_path):

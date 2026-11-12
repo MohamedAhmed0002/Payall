@@ -44,6 +44,7 @@ class UserSubscription(SQLModel, table=True):
     auto_pay_since: date | None = None
     cancelled_at: date | None = None
     ends_on: date | None = None
+    reminder_dismissed_for: date | None = None
     notification_enabled: bool
 
 
@@ -172,7 +173,7 @@ class CatalogItem(BaseModel):
 class Error(BaseModel):
     error: str
     field: str
-    message: str | None = None
+    message: str
 
 
 class SubscriptionList(BaseModel):
@@ -180,11 +181,29 @@ class SubscriptionList(BaseModel):
 
     subscriptions: list[SubscriptionOutput]
     monthly_total: Decimal
+    annual_total: Decimal
+    next_charge: "NextChargeOutput | None"
     currency: str
     cancelled_excluded: int
 
     @field_serializer("monthly_total")
     def serialize_monthly_total(self, value: Decimal) -> float:
+        return float(value)
+
+    @field_serializer("annual_total")
+    def serialize_annual_total(self, value: Decimal) -> float:
+        return float(value)
+
+
+class NextChargeOutput(BaseModel):
+    subscription_id: int
+    service: str
+    date: date
+    amount: Decimal
+    currency: Literal["CHF", "USD", "EUR"]
+
+    @field_serializer("amount")
+    def serialize_amount(self, value: Decimal) -> float:
         return float(value)
 
 
@@ -216,7 +235,7 @@ class SettingsUpdate(BaseModel):
 class NotificationItem(BaseModel):
     subscription_id: int
     service: str
-    reason: Literal["payment_pending", "upcoming_charge"]
+    reason: Literal["payment_overdue", "upcoming_payment"]
     date: date
 
 
