@@ -11,15 +11,16 @@ from models import ExchangeRate
 
 
 RateFetcher = Callable[[str, date], Decimal]
-DEFAULT_RATES_URL = "https://api.frankfurter.app"
+DEFAULT_RATES_URL = "https://api.frankfurter.dev/v1"
 
 
 def fetch_rate(currency: str, on_date: date) -> Decimal:
     url = f"{os.getenv('PAYALL_RATES_URL', DEFAULT_RATES_URL).rstrip('/')}/{on_date}"
     response = httpx.get(
         url,
-        params={"from": currency, "to": "CHF"},
+        params={"base": currency, "symbols": "CHF"},
         timeout=5,
+        follow_redirects=True,
     )
     response.raise_for_status()
     value = response.json()["rates"]["CHF"]
