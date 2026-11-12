@@ -75,8 +75,26 @@ class Payment(SQLModel, table=True):
     subscription_id: int = Field(foreign_key="usersubscription.id", index=True)
     period_start: date
     amount_rappen: int
+    currency: str
+    amount_chf_rappen: int
+    chf_per_unit_millionths: int
+    rate_date: date
     paid_on: date
     method: str
+
+
+class ExchangeRate(SQLModel, table=True):
+    __tablename__ = "exchange_rate"
+    __table_args__ = (
+        UniqueConstraint("currency", "rate_date"),
+        {"sqlite_autoincrement": True},
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    currency: str
+    rate_date: date
+    chf_per_unit_millionths: int
+    fetched_at: datetime
 
 
 class Category(SQLModel, table=True):
@@ -185,6 +203,9 @@ class SubscriptionList(BaseModel):
     next_charge: "NextChargeOutput | None"
     currency: str
     cancelled_excluded: int
+    totals_approximate: bool
+    rates_as_of: date | None
+    rates_missing: int
 
     @field_serializer("monthly_total")
     def serialize_monthly_total(self, value: Decimal) -> float:
@@ -213,11 +234,18 @@ class PaymentOutput(BaseModel):
     service: str
     period_start: date
     amount: Decimal
+    currency: Literal["CHF", "USD", "EUR"]
+    amount_chf: Decimal
+    exchange_rate: Decimal
     paid_on: date
     method: Literal["auto", "manual"]
 
     @field_serializer("amount")
     def serialize_amount(self, value: Decimal) -> float:
+        return float(value)
+
+    @field_serializer("amount_chf", "exchange_rate")
+    def serialize_decimal(self, value: Decimal) -> float:
         return float(value)
 
 
@@ -251,10 +279,17 @@ class HistoryPayment(BaseModel):
     subscription_id: int
     service: str
     amount: Decimal
+    currency: Literal["CHF", "USD", "EUR"]
+    amount_chf: Decimal
+    exchange_rate: Decimal
     method: Literal["auto", "manual"]
 
     @field_serializer("amount")
     def serialize_amount(self, value: Decimal) -> float:
+        return float(value)
+
+    @field_serializer("amount_chf", "exchange_rate")
+    def serialize_decimal(self, value: Decimal) -> float:
         return float(value)
 
 

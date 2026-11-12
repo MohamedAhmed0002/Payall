@@ -50,6 +50,9 @@ def test_manual_payment_and_autopay_errors(tmp_path):
             "service": "SBB Halbtax",
             "period_start": "2026-02-01",
             "amount": 190.0,
+            "currency": "CHF",
+            "amount_chf": 190.0,
+            "exchange_rate": 1.0,
             "paid_on": "2026-11-05",
             "method": "manual",
         }

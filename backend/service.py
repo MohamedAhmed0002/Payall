@@ -26,39 +26,11 @@ from models import (
     SubscriptionUpdate,
     User,
 )
+from errors import PAYALL_ERROR_MESSAGES, PayallError
+from rates import RateFetcher, get_rate
 
 
 CURRENT_USER_ID = 1
-
-
-class PayallError(Exception):
-    def __init__(self, code: str, field: str, status: int = 422):
-        self.code = code
-        self.field = field
-        self.status = status
-        super().__init__(code)
-
-
-PAYALL_ERROR_MESSAGES = {
-    "price_must_be_positive": "Price must be greater than 0.",
-    "price_too_high": "Price must not exceed 100000.00.",
-    "price_required": "Price is required.",
-    "billing_period_required": "Billing period is required.",
-    "service_name_required": "Service name is required.",
-    "service_name_too_long": "Service name must be 100 characters or fewer.",
-    "category_not_found": "The selected category was not found.",
-    "catalog_item_not_found": "The selected catalog item was not found.",
-    "start_date_out_of_range": "Start date is outside the allowed range.",
-    "subscription_not_found": "Subscription not found.",
-    "subscription_cancelled": "This subscription is cancelled.",
-    "already_cancelled": "This subscription is already cancelled.",
-    "already_paid": "This period is already marked as paid.",
-    "auto_pay_subscription": "Automatic payments are enabled for this subscription.",
-    "nothing_due": "There is no payment due for this subscription.",
-    "nothing_to_dismiss": "There is no current notification to dismiss.",
-    "user_not_found": "User not found.",
-    "invalid_input": "The input is invalid.",
-}
 
 
 def _add_months(value: date, months: int) -> date:
@@ -155,14 +127,19 @@ def record_due_autopay_payments(session: Session, today: date) -> None:
                 and period_start >= subscription.auto_pay_since
                 and period_start not in existing
             ):
-                session.add(
-                    Payment(
-                        subscription_id=subscription.id,
-                        period_start=period_start,
-                        amount_rappen=subscription.price_rappen,
-                        paid_on=period_start,
-                        method="auto",
+                try:
+                    rate, rate_date = get_rate(
+                        session,
+                        subscription.currency,
+                        period_start,
+                        session.info.get("rate_fetcher"),
                     )
+                except PayallError as error:
+                    if error.code == "exchange_rate_unavailable":
+                        continue
+                    raise
+                session.add(
+                    _new_payment(subscription, period_start, period_start, "auto", rate, rate_date)
                 )
                 changed = True
     if changed:
@@ -194,6 +171,49 @@ def _payment_status(session: Session, subscription: UserSubscription, today: dat
 
 def _service_name(session: Session, subscription: UserSubscription) -> str:
     return subscription.service
+
+
+def _new_payment(
+    subscription: UserSubscription,
+    period_start: date,
+    paid_on: date,
+    method: str,
+    rate: Decimal,
+    rate_date: date,
+) -> Payment:
+    rate_millionths = int((rate * Decimal(1_000_000)).to_integral_value())
+    amount_chf_rappen = int(
+        (from_rappen(subscription.price_rappen) * rate * 100).to_integral_value(
+            rounding=ROUND_HALF_UP
+        )
+    )
+    return Payment(
+        subscription_id=subscription.id,
+        period_start=period_start,
+        amount_rappen=subscription.price_rappen,
+        currency=subscription.currency,
+        amount_chf_rappen=amount_chf_rappen,
+        chf_per_unit_millionths=rate_millionths,
+        rate_date=rate_date,
+        paid_on=paid_on,
+        method=method,
+    )
+
+
+def _payment_output(session: Session, payment: Payment) -> PaymentOutput:
+    subscription = session.get(UserSubscription, payment.subscription_id)
+    return PaymentOutput(
+        id=payment.id,
+        subscription_id=payment.subscription_id,
+        service=_service_name(session, subscription),
+        period_start=payment.period_start,
+        amount=from_rappen(payment.amount_rappen),
+        currency=payment.currency,
+        amount_chf=from_rappen(payment.amount_chf_rappen),
+        exchange_rate=Decimal(payment.chf_per_unit_millionths) / Decimal(1_000_000),
+        paid_on=payment.paid_on,
+        method=payment.method,
+    )
 
 
 def _to_output(session: Session, subscription: UserSubscription, today: date) -> SubscriptionOutput:
@@ -433,6 +453,9 @@ def list_history(session: Session, event_type: str | None, today: date) -> Histo
                     subscription_id=subscription.id,
                     service=_service_name(session, subscription),
                     amount=from_rappen(payment.amount_rappen),
+                    currency=payment.currency,
+                    amount_chf=from_rappen(payment.amount_chf_rappen),
+                    exchange_rate=Decimal(payment.chf_per_unit_millionths) / Decimal(1_000_000),
                     method=payment.method,
                 ),
             )
@@ -469,6 +492,7 @@ def list_subscriptions(
     search: str | None = None,
     sort: str = "id",
     order: str = "asc",
+    rate_fetcher: RateFetcher | None = None,
 ) -> SubscriptionList:
     record_due_autopay_payments(session, today)
     sort = sort or "id"
@@ -516,24 +540,32 @@ def list_subscriptions(
         with_date.sort(key=lambda item: item.next_charge_date, reverse=order == "desc")
         subscriptions = with_date + without_date
     active = [item for item in visible if item.status == "active"]
-    monthly_total = sum(
-        (
+    monthly_total = Decimal(0)
+    annual_total = Decimal(0)
+    rate_dates: list[date] = []
+    rates_missing = 0
+    for item in active:
+        try:
+            rate, rate_date = get_rate(session, item.currency, today, rate_fetcher)
+        except PayallError as error:
+            if error.code != "exchange_rate_unavailable":
+                raise
+            rates_missing += 1
+            continue
+        if item.currency != "CHF":
+            rate_dates.append(rate_date)
+        monthly_total += (
             item.price
+            * rate
             * {"monthly": Decimal(1), "yearly": Decimal(1) / 12, "weekly": Decimal(52) / 12}[item.billing_period]
-            for item in active
-        ),
-        Decimal(0),
-    ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    annual_total = sum(
-        (
+        )
+        annual_total += (
             item.price
-            * {"monthly": Decimal(12), "yearly": Decimal(1), "weekly": Decimal(52)}[
-                item.billing_period
-            ]
-            for item in active
-        ),
-        Decimal(0),
-    ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            * rate
+            * {"monthly": Decimal(12), "yearly": Decimal(1), "weekly": Decimal(52)}[item.billing_period]
+        )
+    monthly_total = monthly_total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    annual_total = annual_total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     next_charge = min(
         (
             item
@@ -561,6 +593,9 @@ def list_subscriptions(
         ),
         currency=user.currency if user else "CHF",
         cancelled_excluded=sum(item.status == "cancelled" for item in visible),
+        totals_approximate=any(item.currency != "CHF" for item in active),
+        rates_as_of=min(rate_dates) if rate_dates else None,
+        rates_missing=rates_missing,
     )
 
 
@@ -635,26 +670,18 @@ def mark_subscription_paid(session: Session, subscription_id: int, today: date) 
         )
     ).first():
         raise PayallError("already_paid", "id", status=409)
-    payment = Payment(
-        subscription_id=subscription.id,
-        period_start=period_start,
-        amount_rappen=subscription.price_rappen,
-        paid_on=today,
-        method="manual",
+    rate, rate_date = get_rate(
+        session,
+        subscription.currency,
+        today,
+        session.info.get("rate_fetcher"),
     )
+    payment = _new_payment(subscription, period_start, today, "manual", rate, rate_date)
     try:
         session.add(payment)
         session.commit()
         session.refresh(payment)
-        return PaymentOutput(
-            id=payment.id,
-            subscription_id=subscription.id,
-            service=_service_name(session, subscription),
-            period_start=payment.period_start,
-            amount=from_rappen(payment.amount_rappen),
-            paid_on=payment.paid_on,
-            method=payment.method,
-        )
+        return _payment_output(session, payment)
     except Exception:
         session.rollback()
         raise

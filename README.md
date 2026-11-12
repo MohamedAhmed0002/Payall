@@ -212,20 +212,21 @@ The examples below use `1`, `2`, and `3`, matching the implemented system.
 ```
 
 `price` is the amount charged for the selected `billing_period`; the API or app can
-normalise yearly and weekly prices to calculate the monthly dashboard total. `CHF` is
-the user's default currency and is the only supported currency for now; support for
-additional currencies can be added later. Autopay is assumed to succeed on each charge date; it has no bank connection.
+normalise yearly and weekly prices to calculate the monthly dashboard total. CHF, USD
+and EUR are supported. Exchange rates come from the European Central Bank through the
+Frankfurter API and are stored once per day. Totals in CHF are approximate when other
+currencies are involved; only currency codes and dates are sent to the rate service.
+Autopay is assumed to succeed on each charge date; it has no bank connection.
 Manual subscriptions can be marked paid through the payments endpoint. Payment status
 is calculated from recorded payments, with at most one payment per subscription period.
+Payments store the CHF amount and the exchange rate from the payment date, so history
+stays correct when rates change later.
 
 Prices are stored internally as whole Rappen to avoid rounding errors, but the API
 always uses CHF amounts such as `18.90` (returned as the JSON number `18.9`).
-The Figma shows multi-currency with conversion as the target design; the current
-implementation supports CHF only. Currency conversion is planned for a later stage.
-
 ### Business rules and possible operations
 
-Rules: prices must be positive, `currency` is currently limited to `CHF`,
+Rules: prices must be positive, `currency` must be `CHF`, `USD` or `EUR`,
 `billing_period` must be `weekly`, `monthly` or `yearly`, dates must use `YYYY-MM-DD`.
 Autopay records a successful payment on the charge date; manual subscriptions are
 paid through the payments endpoint. Payment status is calculated and there is one
@@ -308,7 +309,8 @@ In code, we use the ORM **SQLModel** (built on SQLAlchemy), following the
 | `category` | `id`, `name` | Fixed unique category list |
 | `subscription` | `id`, `name`, `category_id`, `default_price_rappen`, `billing_period` | Catalog with suggested default price and billing period; `category_id` → `category.id` |
 | `usersubscription` | `id`, `user_id`, `service`, `category_id`, `subscription_id`, `price_rappen`, `currency`, `billing_period`, `start_date`, `tracked_since`, `auto_pay`, `auto_pay_since`, `cancelled_at`, `ends_on`, `notification_enabled`, `reminder_dismissed_for` | User-owned data; `user_id` → `user.id`, `category_id` → `category.id`, optional `subscription_id` → `subscription.id`; calculated values are never stored |
-| `payment` | `id`, `subscription_id`, `period_start`, `amount_rappen`, `paid_on`, `method` | `subscription_id` → `usersubscription.id` |
+| `payment` | `id`, `subscription_id`, `period_start`, `amount_rappen`, `currency`, `amount_chf_rappen`, `chf_per_unit_millionths`, `rate_date`, `paid_on`, `method` | `subscription_id` → `usersubscription.id`; `amount_rappen` remains in the subscription currency |
+| `exchange_rate` | `id`, `currency`, `rate_date`, `chf_per_unit_millionths`, `fetched_at` | One stored ECB/Frankfurter rate per currency and date |
 
 `next_charge_date`, `payment_status`, `status`, `monthly_total`, `annual_total`,
 `next_charge` and notification items are calculated from the user's subscription dates
@@ -347,7 +349,7 @@ We looked at normal subscription tracker apps. We like the simple dashboard with
 | Categories | Decided: fixed list including "Other" | Keep the fixed category table |
 | Money | Decided: stored as whole Rappen to avoid rounding errors | Keep API amounts in CHF |
 | Login and frontend | Later, after the related lectures | Revisit after the lectures |
-| Which currencies? | Decided: CHF only for now | Group decision (Hoi) |
+| Which currencies? | Decided: CHF, USD and EUR are supported | Group decision (Hoi) |
 | Shared household user needed? | Undecided | Group decision (Elpidio) |
 | How do we store data? | Decided: relational SQL (SQLite) with SQLModel ORM | Implement the first workflow (Hoi) |
 | Frontend technology | Undecided | Later |

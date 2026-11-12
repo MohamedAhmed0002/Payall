@@ -25,8 +25,6 @@ from models import (
     SettingsUpdate,
 )
 from service import (
-    PayallError,
-    PAYALL_ERROR_MESSAGES,
     create_subscription,
     delete_subscription,
     edit_subscription,
@@ -42,9 +40,17 @@ from service import (
     read_settings,
     update_settings,
 )
+from errors import PAYALL_ERROR_MESSAGES, PayallError
+from rates import RateFetcher, fetch_rate
 
 
-def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> FastAPI:
+def create_app(
+    database_file: Path,
+    *,
+    echo: bool = False,
+    today=date.today,
+    rate_fetcher: RateFetcher | None = None,
+) -> FastAPI:
     engine = make_engine(database_file, echo=echo)
 
     @asynccontextmanager
@@ -63,6 +69,7 @@ def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> 
 
     def get_session():
         with Session(engine) as session:
+            session.info["rate_fetcher"] = rate_fetcher or fetch_rate
             yield session
 
     DatabaseSession = Annotated[Session, Depends(get_session)]
@@ -116,7 +123,7 @@ def create_app(database_file: Path, *, echo: bool = False, today=date.today) -> 
             description="Sort direction: asc or desc.",
         ),
     ):
-        return list_subscriptions(session, today(), search, sort, order)
+        return list_subscriptions(session, today(), search, sort, order, rate_fetcher or fetch_rate)
 
     @app.get(
         "/subscriptions/{subscription_id}",

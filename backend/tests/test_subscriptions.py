@@ -1,4 +1,6 @@
 from datetime import date
+from datetime import datetime, timezone
+from decimal import Decimal
 import sys
 from pathlib import Path
 
@@ -9,12 +11,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from database import initialise, make_engine
 from main import create_app
-from models import Subscription, SubscriptionUpdate, UserSubscription
+from models import ExchangeRate, Subscription, SubscriptionUpdate, UserSubscription
 from service import edit_subscription, list_subscriptions, next_charge_date
 
 
-def client_for(tmp_path):
-    return TestClient(create_app(tmp_path / "payall.sqlite", today=lambda: date(2026, 11, 5)))
+def client_for(tmp_path, *, today=date(2026, 11, 5), rate_fetcher=None):
+    return TestClient(
+        create_app(tmp_path / "payall.sqlite", today=lambda: today, rate_fetcher=rate_fetcher)
+    )
 
 
 def valid_payload(**overrides):
@@ -41,6 +45,88 @@ def test_get_seeded_subscriptions(tmp_path):
     assert data["monthly_total"] == 49.68
     assert data["subscriptions"][0]["price"] == 18.9
     assert data["subscriptions"][0]["category"] == "Entertainment"
+    assert data["totals_approximate"] is False
+    assert data["rates_as_of"] is None
+
+
+def test_non_chf_totals_use_and_store_injected_rate(tmp_path):
+    calls = []
+
+    def fetch_rate(currency, on_date):
+        calls.append((currency, on_date))
+        return Decimal("0.80")
+
+    with client_for(tmp_path, today=date(2026, 11, 12), rate_fetcher=fetch_rate) as client:
+        response = client.post(
+            "/subscriptions",
+            json=valid_payload(currency="USD", price=100.0),
+        )
+        assert response.status_code == 201
+        first = client.get("/subscriptions").json()
+        second = client.get("/subscriptions").json()
+
+    assert first["monthly_total"] == 129.68
+    assert first["annual_total"] == 1556.2
+    assert first["totals_approximate"] is True
+    assert first["rates_as_of"] == "2026-11-12"
+    assert first["rates_missing"] == 0
+    assert second["monthly_total"] == 129.68
+    assert calls == [("USD", date(2026, 11, 12))]
+
+
+def test_failed_fetch_uses_older_stored_rate(tmp_path):
+    database_file = tmp_path / "payall.sqlite"
+    engine = make_engine(database_file)
+    initialise(engine)
+    with Session(engine) as session:
+        session.add(
+            ExchangeRate(
+                currency="USD",
+                rate_date=date(2026, 11, 11),
+                chf_per_unit_millionths=800_000,
+                fetched_at=datetime.now(timezone.utc),
+            )
+        )
+        session.commit()
+
+    def failing_fetcher(_currency, _on_date):
+        raise RuntimeError("offline")
+
+    with TestClient(
+        create_app(database_file, today=lambda: date(2026, 11, 12), rate_fetcher=failing_fetcher)
+    ) as client:
+        response = client.post(
+            "/subscriptions",
+            json=valid_payload(currency="USD", price=100.0),
+        )
+        assert response.status_code == 201
+        result = client.get("/subscriptions")
+
+    assert result.status_code == 200
+    assert result.json()["monthly_total"] == 129.68
+    assert result.json()["rates_as_of"] == "2026-11-11"
+
+
+def test_failed_fetch_leaves_subscription_out_of_totals(tmp_path):
+    def failing_fetcher(_currency, _on_date):
+        raise RuntimeError("offline")
+
+    with client_for(
+        tmp_path,
+        today=date(2026, 11, 12),
+        rate_fetcher=failing_fetcher,
+    ) as client:
+        response = client.post(
+            "/subscriptions",
+            json=valid_payload(currency="USD", price=100.0),
+        )
+        assert response.status_code == 201
+        result = client.get("/subscriptions")
+
+    assert result.status_code == 200
+    assert result.json()["monthly_total"] == 49.68
+    assert result.json()["annual_total"] == 596.2
+    assert result.json()["rates_missing"] == 1
 
 
 def test_openapi_documents_custom_validation_errors(tmp_path):
