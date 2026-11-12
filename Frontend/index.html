@@ -1944,23 +1944,20 @@
                 >
                   ${isPending ? `
                     <button type="button" onclick="quickMarkPaid(${sub.id})" class="w-full text-left px-4 py-2 hover:bg-alabaster text-emerald-800 font-semibold flex items-center justify-between">
-                      <span>Mark as Paid</span>
+                      <span>Mark as paid</span>
                       <span>✓</span>
                     </button>
                   ` : ''}
                   <button type="button" onclick="openSubscriptionDrawer('edit', ${sub.id})" class="w-full text-left px-4 py-2 hover:bg-alabaster text-obsidian flex items-center justify-between">
-                    <span>Edit Details</span>
-                    <span class="font-mono text-[10px] text-stone">PATCH</span>
+                    <span>Edit</span>
                   </button>
                   ${sub.status === 'active' ? `
                     <button type="button" onclick="handleCancelSubscription(${sub.id})" class="w-full text-left px-4 py-2 hover:bg-amber-50 text-amber-800 flex items-center justify-between">
-                      <span>Cancel Plan</span>
-                      <span class="font-mono text-[10px]">POST</span>
+                      <span>Cancel</span>
                     </button>
                   ` : ''}
                   <button type="button" onclick="quickDeleteSub(${sub.id})" class="w-full text-left px-4 py-2 hover:bg-red-50 text-red-700 flex items-center justify-between border-t border-obsidian/5 mt-1 pt-2">
                     <span>Delete</span>
-                    <span class="font-mono text-[10px]">204</span>
                   </button>
                 </div>
               </div>
