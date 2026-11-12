@@ -94,14 +94,15 @@ def test_catalog_is_seeded_with_defaults(tmp_path):
     }
     assert seeded_subscription["next_charge_date"] == "2026-11-12"
     assert seeded_subscription["payment_status"] == "paid"
+    assert seeded_subscription["status"] == "active"
     engine = make_engine(database_file)
     with Session(engine) as session:
         user_subscription = session.exec(
             select(UserSubscription).where(UserSubscription.id == 1)
         ).one()
-        assert user_subscription.next_charge_date == date(2026, 11, 12)
-        assert user_subscription.payment_status == "paid"
-        assert user_subscription.status == "active"
+        assert not hasattr(user_subscription, "next_charge_date")
+        assert not hasattr(user_subscription, "payment_status")
+        assert not hasattr(user_subscription, "status")
         catalog_subscription = session.get(Subscription, 1)
         catalog_subscription.name = "Preserved catalog edit"
         session.add(catalog_subscription)
@@ -166,17 +167,18 @@ def test_create_custom_subscription(tmp_path):
             json=valid_payload(service="Local Gym", category_id=4),
         )
     assert response.status_code == 201
-    assert response.json()["category"] == "Health & Fitness"
+    body = response.json()
+    assert body["category"] == "Health & Fitness"
+    assert body["catalog_id"] is None
+    assert body["is_custom"] is True
+    catalog_items = client.get("/catalog").json()
+    assert len(catalog_items) == 58
+    assert not any(item["name"] == "Local Gym" for item in catalog_items)
     with Session(client.app.state.engine) as session:
         user_subscription = session.exec(
-            select(UserSubscription).where(UserSubscription.id == response.json()["id"])
+            select(UserSubscription).where(UserSubscription.id == body["id"])
         ).one()
-        catalog = session.get(Subscription, user_subscription.subscription_id)
-        assert catalog.name == "Local Gym"
-        assert catalog.category_id == 4
-        assert catalog.default_price_rappen == 1200
-        assert catalog.billing_period == "monthly"
-        assert len(session.exec(select(Subscription)).all()) == 59
+        assert len(session.exec(select(Subscription)).all()) == 58
 
 
 def test_rappen_round_trip(tmp_path):
@@ -247,6 +249,8 @@ def test_edit_subscription_plan_change_starts_at_next_charge(tmp_path):
         session.flush()
         subscription = UserSubscription(
             user_id=1,
+            service="Monthly",
+            category_id=1,
             subscription_id=details.id,
             price_rappen=1000,
             currency="CHF",
