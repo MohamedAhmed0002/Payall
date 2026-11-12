@@ -260,10 +260,10 @@ def create_subscription(session: Session, payload: SubscriptionInput, today: dat
         raise PayallError("start_date_out_of_range", "start_date")
 
     details = None
-    if payload.subscription_id is not None:
-        details = session.get(Subscription, payload.subscription_id)
+    if payload.catalog_id is not None:
+        details = session.get(Subscription, payload.catalog_id)
         if details is None:
-            raise PayallError("catalog_item_not_found", "subscription_id")
+            raise PayallError("catalog_item_not_found", "catalog_id")
         service = payload.service.strip() if payload.service else details.name
         category_id = payload.category_id if payload.category_id is not None else details.category_id
         price = payload.price if payload.price is not None else from_rappen(details.default_price_rappen)
@@ -289,7 +289,7 @@ def create_subscription(session: Session, payload: SubscriptionInput, today: dat
         user_id=CURRENT_USER_ID,
         service=service,
         category_id=category_id,
-        subscription_id=payload.subscription_id,
+        subscription_id=payload.catalog_id,
         price_rappen=to_rappen(price),
         currency=payload.currency,
         billing_period=billing_period,

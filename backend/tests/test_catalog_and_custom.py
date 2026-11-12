@@ -36,7 +36,7 @@ def test_catalog_subscription_uses_catalog_defaults(tmp_path):
     with client_for(tmp_path / "payall.sqlite", date(2026, 11, 12)) as client:
         response = client.post(
             "/subscriptions",
-            json={"subscription_id": 1, "start_date": "2026-01-15", "auto_pay": False},
+            json={"catalog_id": 1, "start_date": "2026-01-15", "auto_pay": False},
         )
 
     assert response.status_code == 201
@@ -53,7 +53,7 @@ def test_catalog_subscription_keeps_user_price_without_changing_catalog(tmp_path
         response = client.post(
             "/subscriptions",
             json={
-                "subscription_id": 1,
+                "catalog_id": 1,
                 "price": 24.90,
                 "start_date": "2026-01-15",
                 "auto_pay": False,
@@ -102,16 +102,16 @@ def test_patching_service_does_not_change_catalog(tmp_path):
     assert "Netflix family" not in catalog_names
 
 
-def test_unknown_catalog_subscription_id_is_invalid_input(tmp_path):
+def test_unknown_catalog_id_is_invalid_input(tmp_path):
     with client_for(tmp_path / "payall.sqlite") as client:
         response = client.post(
             "/subscriptions",
-            json={"subscription_id": 999, "start_date": "2026-01-15", "auto_pay": False},
+            json={"catalog_id": 999, "start_date": "2026-01-15", "auto_pay": False},
         )
 
     assert response.status_code == 422
     assert response.json()["error"] == "catalog_item_not_found"
-    assert response.json()["field"] == "subscription_id"
+    assert response.json()["field"] == "catalog_id"
     assert response.json()["message"]
 
 

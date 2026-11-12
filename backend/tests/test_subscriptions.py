@@ -202,7 +202,7 @@ def test_create_subscription_and_updated_total(tmp_path):
     with client_for(tmp_path) as client:
         response = client.post(
             "/subscriptions",
-            json={"subscription_id": 1, "start_date": "2026-01-15", "auto_pay": False},
+            json={"catalog_id": 1, "start_date": "2026-01-15", "auto_pay": False},
         )
         assert response.status_code == 201
         assert response.headers["location"] == "/subscriptions/4"
@@ -216,7 +216,7 @@ def test_create_catalog_subscription_uses_custom_price(tmp_path):
         response = client.post(
             "/subscriptions",
             json={
-                "subscription_id": 1,
+                "catalog_id": 1,
                 "price": 25.0,
                 "billing_period": "yearly",
                 "start_date": "2026-01-15",

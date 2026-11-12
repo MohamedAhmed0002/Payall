@@ -108,7 +108,10 @@ class Category(SQLModel, table=True):
 class SubscriptionInput(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
-    subscription_id: int | None = None
+    catalog_id: int | None = Field(
+        default=None,
+        description="Catalog entry (GET /catalog) for a listed service. Leave out for a custom subscription.",
+    )
     service: str | None = None
     category_id: int | None = None
     price: Decimal | None = None
