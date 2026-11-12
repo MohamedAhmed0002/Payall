@@ -1765,7 +1765,7 @@
         renderSubscriptionRows(loadedSubscriptions);
 
         // 4. Load Notifications Banner from GET /api/notifications
-        loadNotificationsBanner();
+        await loadNotificationsBanner();
       } catch (err) {
         showToast(err.message, true);
         const listEl = document.getElementById('subscriptions-stack-list');
@@ -2327,7 +2327,7 @@
           };
           if (catalogId) {
             Object.assign(payload, {
-              subscription_id: Number(catalogId),
+              catalog_id: Number(catalogId),
               price,
               billing_period
             });

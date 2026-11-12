@@ -375,6 +375,17 @@ def list_notifications(session: Session, today: date) -> NotificationOutput:
         if output.status != "active":
             continue
         current_period = _period_start(subscription, today)
+        notification_next_charge = output.next_charge_date
+        if (
+            output.payment_status == "paid"
+            and current_period is not None
+            and notification_next_charge == current_period
+        ):
+            notification_next_charge = next_charge_date(
+                subscription.start_date,
+                subscription.billing_period,
+                today + timedelta(days=1),
+            )
         autopay_covers_current = (
             current_period is not None
             and subscription.auto_pay
@@ -391,10 +402,10 @@ def list_notifications(session: Session, today: date) -> NotificationOutput:
             else None
         )
         reason = "payment_overdue" if notification_date is not None else None
-        if notification_date is None and output.next_charge_date is not None:
-            if today <= output.next_charge_date <= reminder_end and not autopay_covers_current:
-                if output.next_charge_date != subscription.reminder_dismissed_for:
-                    notification_date = output.next_charge_date
+        if notification_date is None and notification_next_charge is not None:
+            if today <= notification_next_charge <= reminder_end and not autopay_covers_current:
+                if notification_next_charge != subscription.reminder_dismissed_for:
+                    notification_date = notification_next_charge
                     reason = "upcoming_payment"
         if notification_date is None or notification_date == subscription.reminder_dismissed_for:
             continue

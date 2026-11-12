@@ -85,6 +85,33 @@ def test_future_manual_subscription_has_nothing_due(tmp_path):
         assert error["message"]
 
 
+def test_paying_new_subscription_advances_notification_date(tmp_path):
+    with client_for(tmp_path / "payall.sqlite", date(2026, 11, 12)) as client:
+        response = client.post(
+            "/subscriptions",
+            json={
+                "service": "New Plan",
+                "category_id": 1,
+                "price": 10,
+                "currency": "CHF",
+                "billing_period": "monthly",
+                "start_date": "2026-11-12",
+                "auto_pay": False,
+                "notification_enabled": True,
+            },
+        )
+        subscription = response.json()
+        assert client.get("/notifications").json()["count"] == 2
+
+        assert client.post(f"/subscriptions/{subscription['id']}/payments").status_code == 201
+
+        notifications = client.get("/notifications").json()
+        assert notifications["count"] == 1
+        assert subscription["id"] not in {
+            item["subscription_id"] for item in notifications["items"]
+        }
+
+
 def test_turning_on_autopay_keeps_earlier_period_manual(tmp_path):
     with client_for(tmp_path / "payall.sqlite") as client:
         assert client.patch("/subscriptions/2", json={"auto_pay": True}).status_code == 200
