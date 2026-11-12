@@ -1,16 +1,67 @@
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlsplit
 import json
+import re
+from pathlib import Path
 
 BACKEND_URL = "http://127.0.0.1:8000"
 PORT = 3000
 
+API_ROUTES = {
+    "GET": (
+        re.compile(r"^/subscriptions$"),
+        re.compile(r"^/categories$"),
+        re.compile(r"^/catalog$"),
+        re.compile(r"^/notifications$"),
+        re.compile(r"^/history$"),
+        re.compile(r"^/settings$"),
+    ),
+    "POST": (
+        re.compile(r"^/subscriptions$"),
+        re.compile(r"^/subscriptions/\d+/(payments|cancel)$"),
+    ),
+    "PATCH": (
+        re.compile(r"^/subscriptions/\d+$"),
+        re.compile(r"^/settings$"),
+    ),
+    "DELETE": (
+        re.compile(r"^/subscriptions/\d+$"),
+    ),
+}
+
 
 class ProxyHandler(SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(
+            *args,
+            directory=str(Path(__file__).resolve().parent),
+            **kwargs,
+        )
+
+    def api_route(self):
+        parsed = urlsplit(self.path)
+        routes = API_ROUTES.get(self.command, ())
+        if parsed.path.startswith("/api/"):
+            backend_path = parsed.path[4:]
+            if any(route.fullmatch(backend_path) for route in routes):
+                return parsed
+        return None
+
+    def reject_request(self, status=404):
+        self.send_error(status)
+
     def proxy_to_backend(self):
         # Strip "/api" so "/api/subscriptions" -> "http://127.0.0.1:8000/subscriptions"
-        target_url = BACKEND_URL + self.path[4:]
+        parsed = self.api_route()
+        if parsed is None:
+            self.reject_request()
+            return
+
+        target_url = BACKEND_URL + parsed.path[4:]
+        if parsed.query:
+            target_url += "?" + parsed.query
         content_length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(content_length) if content_length > 0 else None
 
@@ -45,10 +96,18 @@ class ProxyHandler(SimpleHTTPRequestHandler):
             self.wfile.write(resp_body)
 
     def do_GET(self):
-        if self.path.startswith("/api/"):
+        if self.api_route() is not None:
             self.proxy_to_backend()
-        else:
+        elif urlsplit(self.path).path in ("/", "/index.html"):
             super().do_GET()
+        else:
+            self.reject_request()
+
+    def do_HEAD(self):
+        if urlsplit(self.path).path in ("/", "/index.html"):
+            super().do_HEAD()
+        else:
+            self.reject_request()
 
     def do_POST(self):
         self.proxy_to_backend()
