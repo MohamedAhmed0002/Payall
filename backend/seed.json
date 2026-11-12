@@ -432,6 +432,8 @@
     {
       "id": 1,
       "user_id": 1,
+      "service": "Netflix",
+      "category_id": 1,
       "subscription_id": 1,
       "price": 18.9,
       "currency": "CHF",
@@ -445,6 +447,8 @@
     {
       "id": 2,
       "user_id": 1,
+      "service": "SBB Halbtax",
+      "category_id": 3,
       "subscription_id": 13,
       "price": 190.0,
       "currency": "CHF",
@@ -457,6 +461,8 @@
     {
       "id": 3,
       "user_id": 1,
+      "service": "Spotify",
+      "category_id": 2,
       "subscription_id": 10,
       "price": 14.95,
       "currency": "CHF",

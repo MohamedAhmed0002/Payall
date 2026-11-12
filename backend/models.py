@@ -27,21 +27,18 @@ class UserSubscription(SQLModel, table=True):
     __table_args__ = (
         CheckConstraint("price_rappen > 0"),
         CheckConstraint("billing_period IN ('weekly', 'monthly', 'yearly')"),
-        CheckConstraint("payment_status IN ('paid', 'pending')"),
-        CheckConstraint("status IN ('active', 'cancelled', 'ended')"),
         {"sqlite_autoincrement": True},
     )
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", index=True)
-    subscription_id: int = Field(foreign_key="subscription.id", index=True)
+    service: str
+    category_id: int = Field(foreign_key="category.id", index=True)
+    subscription_id: int | None = Field(default=None, foreign_key="subscription.id", index=True)
     price_rappen: int
     currency: str
     billing_period: str
     start_date: date
-    next_charge_date: date | None = None
-    payment_status: str = "pending"
-    status: str = "active"
     tracked_since: date
     auto_pay: bool
     auto_pay_since: date | None = None
@@ -143,6 +140,8 @@ class SubscriptionOutput(BaseModel):
     price: Decimal
     currency: Literal["CHF", "USD", "EUR"]
     billing_period: Literal["weekly", "monthly", "yearly"]
+    catalog_id: int | None
+    is_custom: bool
     start_date: date
     auto_pay: bool
     next_charge_date: date | None
