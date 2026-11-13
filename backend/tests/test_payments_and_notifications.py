@@ -85,6 +85,39 @@ def test_future_manual_subscription_has_nothing_due(tmp_path):
         assert error["message"]
 
 
+def test_manual_charge_today_becomes_overdue_next_day(tmp_path):
+    database_file = tmp_path / "payall.sqlite"
+    payload = {
+        "service": "Today Plan",
+        "category_id": 5,
+        "price": 10,
+        "currency": "CHF",
+        "billing_period": "monthly",
+        "start_date": "2026-11-05",
+        "auto_pay": False,
+        "notification_enabled": True,
+    }
+
+    with client_for(database_file, date(2026, 11, 5)) as client:
+        created = client.post("/subscriptions", json=payload).json()
+        item = next(
+            item
+            for item in client.get("/notifications").json()["items"]
+            if item["subscription_id"] == created["id"]
+        )
+        assert item["reason"] == "upcoming_payment"
+        assert item["date"] == "2026-11-05"
+
+    with client_for(database_file, date(2026, 11, 6)) as client:
+        item = next(
+            item
+            for item in client.get("/notifications").json()["items"]
+            if item["subscription_id"] == created["id"]
+        )
+        assert item["reason"] == "payment_overdue"
+        assert item["date"] == "2026-11-05"
+
+
 def test_paying_new_subscription_advances_notification_date(tmp_path):
     with client_for(tmp_path / "payall.sqlite", date(2026, 11, 12)) as client:
         response = client.post(

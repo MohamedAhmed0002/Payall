@@ -401,7 +401,13 @@ def list_notifications(session: Session, today: date) -> NotificationOutput:
             if overdue_date != subscription.reminder_dismissed_for
             else None
         )
-        reason = "payment_overdue" if notification_date is not None else None
+        reason = (
+            "payment_overdue"
+            if overdue_date is not None and overdue_date < today
+            else "upcoming_payment"
+            if overdue_date == today
+            else None
+        )
         if notification_date is None and notification_next_charge is not None:
             if today <= notification_next_charge <= reminder_end and not autopay_covers_current:
                 if notification_next_charge != subscription.reminder_dismissed_for:
