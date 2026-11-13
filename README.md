@@ -32,6 +32,11 @@ this charge or turn reminders off (and is then asked whether to cancel the subsc
 Styling: Tailwind is pre-built into `Frontend/static/tailwind.css`. After adding new
 Tailwind classes, rebuild with the npx command from `Frontend/tailwind`.
 
+```sh
+cd Frontend/tailwind
+npx tailwindcss@3 -c tailwind.config.js -i input.css -o ../static/tailwind.css --minify
+```
+
 Not implemented yet: login and the security features in Settings (password, 2FA, sessions,
 delete account) come after the security lecture.
 
