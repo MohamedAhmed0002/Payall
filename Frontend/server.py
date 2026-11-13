@@ -8,6 +8,7 @@ from pathlib import Path
 
 BACKEND_URL = "http://127.0.0.1:8000"
 PORT = 3000
+TAILWIND_CSS_PATH = Path(__file__).resolve().parent / "static" / "tailwind.css"
 
 API_ROUTES = {
     "GET": (
@@ -52,6 +53,15 @@ class ProxyHandler(SimpleHTTPRequestHandler):
 
     def reject_request(self, status=404):
         self.send_error(status)
+
+    def serve_tailwind_css(self):
+        body = TAILWIND_CSS_PATH.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", "text/css")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(body)
 
     def proxy_to_backend(self):
         # Strip "/api" so "/api/subscriptions" -> "http://127.0.0.1:8000/subscriptions"
@@ -101,12 +111,16 @@ class ProxyHandler(SimpleHTTPRequestHandler):
             self.proxy_to_backend()
         elif urlsplit(self.path).path in ("/", "/index.html"):
             super().do_GET()
+        elif urlsplit(self.path).path == "/static/tailwind.css":
+            self.serve_tailwind_css()
         else:
             self.reject_request()
 
     def do_HEAD(self):
         if urlsplit(self.path).path in ("/", "/index.html"):
             super().do_HEAD()
+        elif urlsplit(self.path).path == "/static/tailwind.css":
+            self.serve_tailwind_css()
         else:
             self.reject_request()
 

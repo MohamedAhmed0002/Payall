@@ -10,6 +10,31 @@
 
 Without the launcher: run python run.py in /backend and python server.py in /Frontend, each in its own terminal.
 
+## Frontend
+
+Approach: one static page (Frontend/index.html) with browser JavaScript that calls our API
+through /api. Frontend/server.py serves the page and forwards only allow-listed API routes
+to FastAPI (same origin, no CORS needed). The API owns all business rules; the page only
+shows the API's results and messages and shows success only after the API confirms.
+
+How to start: `python start_all.py` → http://127.0.0.1:3000
+
+Success example: add "Spotify" from the catalog → `POST /api/subscriptions` → `201`; it
+appears in the list and the monthly/annual totals update.
+
+Error example: add a subscription with price 0 → `422`
+`{"error": "price_must_be_positive", "field": "price", "message": "Price must be greater than 0."}`;
+the page shows the message under the Price field with a red border.
+
+Reminders: the dashboard shows each reminder with its reason; the user can dismiss it for
+this charge or turn reminders off (and is then asked whether to cancel the subscription).
+
+Styling: Tailwind is pre-built into `Frontend/static/tailwind.css`. After adding new
+Tailwind classes, rebuild with the npx command from `Frontend/tailwind`.
+
+Not implemented yet: login and the security features in Settings (password, 2FA, sessions,
+delete account) come after the security lecture.
+
 ## Project overview
 
 Payall is a web app to track spending, manage budgets and monitor subscriptions. People often forget which subscriptions they have, when they renew and how much they pay in total. For the first milestone we focus on subscriptions only: the user sees all subscriptions in one dashboard, with price, billing period, payment status and the total cost per month.
@@ -276,7 +301,8 @@ subscription's Rappen price and `billing_period`; for the three seeded subscript
 `49.68` CHF and `596.20` CHF. Notifications only cover manual or not-yet-autopay-covered
 periods, and a dismissal applies until the next charge date. All API business-rule errors
 include a short English `message` alongside `error` and `field`.
-Currency conversion is deferred until currencies beyond CHF are supported. Duplicate services are allowed because a user
+An unpaid manual charge is 'upcoming' on its charge day and 'overdue' from the next day.
+CHF, USD and EUR are supported; totals are converted to CHF with daily ECB rates and marked approximate. Duplicate services are allowed because a user
 may have more than one plan, but the UI should warn before creating an apparent duplicate.
 
 ### Data storage
@@ -352,7 +378,7 @@ We looked at normal subscription tracker apps. We like the simple dashboard with
 | Which currencies? | Decided: CHF, USD and EUR are supported | Group decision (Hoi) |
 | Shared household user needed? | Undecided | Group decision (Elpidio) |
 | How do we store data? | Decided: relational SQL (SQLite) with SQLModel ORM | Implement the first workflow (Hoi) |
-| Frontend technology | Undecided | Later |
+| Frontend technology | Decided: static HTML + JavaScript calling the API (browser + API approach, lecture 07) | Done (team) |
 
 ### Milestone progress
 
@@ -360,7 +386,7 @@ We looked at normal subscription tracker apps. We like the simple dashboard with
 |---|---|---|
 | 1 – Design draft | Analysis, workflow, sketches, example JSON and proposed operations | Draft done, open questions listed above |
 | 2 – Contract and available implementation | OpenAPI contract, subscriptions, payments, settings, notifications, history, search and sort endpoints; pytest passes | Implemented and tested |
-| Integration – later | Revised feature scope, frontend decision, architecture and a connected workflow | Update later |
+| Integration – later | Dashboard and add-subscription workflow connected to the API, success and error shown in the UI | In progress: login after the security lecture |
 
 ## 4. References and acknowledgements
 
