@@ -21,6 +21,7 @@ API_ROUTES = {
     "POST": (
         re.compile(r"^/subscriptions$"),
         re.compile(r"^/subscriptions/\d+/(payments|cancel)$"),
+        re.compile(r"^/notifications/\d+/dismiss$"),
     ),
     "PATCH": (
         re.compile(r"^/subscriptions/\d+$"),

@@ -580,7 +580,7 @@
           <p id="kpi-monthly-sub" class="text-xs font-mono text-stone">Loading from /api/subscriptions...</p>
         </div>
 
-        <!-- Card 2: Annualized Total (TODO: Not in API yet, no JS calculation) -->
+        <!-- Card 2: Annualized Total -->
         <div class="kpi-card rounded-2xl p-7">
           <div class="flex items-center justify-between mb-5">
             <span class="font-mono text-[11px] uppercase tracking-[0.16em] text-stone font-semibold">02 // ANNUALIZED TOTAL</span>
@@ -591,13 +591,12 @@
             </span>
           </div>
           <div class="flex items-baseline gap-2 mb-2">
-            <!-- TODO: Display annual_total from API once backend implements it -->
-            <span id="kpi-annual-total" class="kpi-kinetic-num font-mono text-3xl sm:text-4xl font-semibold tracking-tight">TODO</span>
+            <span id="kpi-annual-total" class="kpi-kinetic-num font-mono text-3xl sm:text-4xl font-semibold tracking-tight">-- CHF</span>
           </div>
-          <p id="kpi-annual-sub" class="text-xs font-mono text-stone uppercase tracking-wider">TODO: Awaiting annual_total from API</p>
+          <p id="kpi-annual-sub" class="text-xs font-mono text-stone uppercase tracking-wider whitespace-pre-line"></p>
         </div>
 
-        <!-- Card 3: Next Charge (TODO: Not in API yet, no JS calculation) -->
+        <!-- Card 3: Next Charge -->
         <div class="kpi-card rounded-2xl p-7">
           <div class="flex items-center justify-between mb-5">
             <span class="font-mono text-[11px] uppercase tracking-[0.16em] text-stone font-semibold">03 // NEXT CHARGE</span>
@@ -608,10 +607,9 @@
             </span>
           </div>
           <div class="flex items-baseline gap-2 mb-2">
-            <!-- TODO: Display next_charge from API once backend implements it -->
-            <span id="kpi-next-charge-amount" class="kpi-kinetic-num font-mono text-3xl sm:text-4xl font-semibold tracking-tight">TODO</span>
+            <span id="kpi-next-charge-amount" class="kpi-kinetic-num font-mono text-3xl sm:text-4xl font-semibold tracking-tight">--</span>
           </div>
-          <p id="kpi-next-charge-sub" class="text-xs font-mono text-stone truncate">TODO: Awaiting next_charge from API</p>
+          <p id="kpi-next-charge-sub" class="text-xs font-mono text-stone truncate"></p>
         </div>
       </div>
 
@@ -789,12 +787,15 @@
         </div>
 
         <!-- Renewal Attention Callout Banner (Populated from GET /api/notifications) -->
-        <div id="renewal-alert-banner" class="hidden mb-6 rounded-xl bg-[#FEF9EE] border border-amber-500/30 px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div class="flex items-center gap-3">
+        <div id="renewal-alert-banner" class="hidden mb-6 rounded-xl bg-[#FEF9EE] border border-amber-500/30 px-5 py-3.5 flex flex-col gap-3">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
             <span class="w-2 h-2 rounded-full bg-amber-600"></span>
             <p id="renewal-alert-text" class="text-xs sm:text-sm font-medium text-amber-950"></p>
+            </div>
+            <span class="font-mono text-[10px] uppercase tracking-widest text-amber-800 font-semibold">Reminders</span>
           </div>
-          <span class="font-mono text-[10px] uppercase tracking-widest text-amber-800 font-semibold">API Notification</span>
+          <div id="renewal-alert-items" class="space-y-2"></div>
         </div>
 
         <!-- Column Headers -->
@@ -1613,7 +1614,7 @@
       if (lower.includes('proton')) return BRAND_LOGOS['proton'];
       if (lower.includes('swisscom') || lower.includes('sunrise') || lower.includes('salt') || lower.includes('serafe') || lower.includes('nzz')) return BRAND_LOGOS['swisscom'];
       const initial = (serviceName || '?').trim().charAt(0).toUpperCase();
-      return `<div class="w-11 h-11 rounded-xl bg-obsidian text-gold font-display text-lg flex items-center justify-center shrink-0 shadow-sm">${initial}</div>`;
+      return `<div class="w-11 h-11 rounded-xl bg-obsidian text-gold font-display text-lg flex items-center justify-center shrink-0 shadow-sm">${escapeHtml(initial)}</div>`;
     }
 
     // =========================================================================
@@ -1630,10 +1631,17 @@
     // =========================================================================
     const ApiService = {
       async request(path, options = {}) {
-        const response = await fetch(`/api${path}`, {
-          headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-          ...options
-        });
+        let response;
+        try {
+          response = await fetch(`/api${path}`, {
+            headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+            ...options
+          });
+        } catch (_) {
+          const err = new Error('Cannot reach Payall. Please check that the app is running.');
+          err.field = null;
+          throw err;
+        }
 
         // DELETE returns 204 with no body
         if (response.status === 204) {
@@ -1643,8 +1651,7 @@
         const data = await response.json().catch(() => null);
 
         if (!response.ok) {
-          // API errors have shape {error, field, message}: show message
-          const msg = (data && (data.message || data.error)) || `HTTP Error ${response.status}`;
+          const msg = (data && data.message) || `Something went wrong (HTTP ${response.status}). Please try again.`;
           const err = new Error(msg);
           err.field = data ? data.field : null;
           throw err;
@@ -1710,6 +1717,10 @@
         return this.request('/notifications');
       },
 
+      dismissNotification(id) {
+        return this.request(`/notifications/${id}/dismiss`, { method: 'POST' });
+      },
+
       getHistory() {
         return this.request('/history');
       },
@@ -1736,6 +1747,12 @@
       return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     }
 
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[char]));
+    }
+
     async function loadDashboardSubscriptions() {
       const searchVal = document.getElementById('table-search').value || '';
       const sortRaw = document.getElementById('sort-select').value || '';
@@ -1752,14 +1769,34 @@
         loadedSubscriptions = data.subscriptions || [];
 
         // 1. Card 1: Monthly Total directly from API (no JS calculation)
-        const monthlyTotalFormatted = Number(data.monthly_total || 0).toFixed(2);
         const currency = data.currency || 'CHF';
-        document.getElementById('kpi-monthly-total').textContent = `${monthlyTotalFormatted} ${currency}`;
-        document.getElementById('kpi-monthly-sub').textContent =
-          `${loadedSubscriptions.length} listed . ${data.cancelled_excluded || 0} cancelled excluded`;
+        const prefix = data.totals_approximate ? '≈ ' : '';
+        document.getElementById('kpi-monthly-total').textContent =
+          `${prefix}${Number(data.monthly_total || 0).toFixed(2)} ${currency}`;
+        const totalNotes = [
+          `${loadedSubscriptions.length} listed . ${data.cancelled_excluded || 0} cancelled excluded`
+        ];
+        if (data.totals_approximate) totalNotes.push(`Rates of ${formatDateText(data.rates_as_of)} (ECB)`);
+        if (data.rates_missing > 0) {
+          totalNotes.push(`${data.rates_missing} subscription(s) not included: exchange rate unavailable`);
+        }
+        document.getElementById('kpi-monthly-sub').textContent = totalNotes.join('\n');
+        document.getElementById('kpi-annual-total').textContent =
+          `${prefix}${Number(data.annual_total || 0).toFixed(2)} ${currency}`;
+        const annualNotes = [];
+        if (data.totals_approximate) annualNotes.push(`Rates of ${formatDateText(data.rates_as_of)} (ECB)`);
+        if (data.rates_missing > 0) {
+          annualNotes.push(`${data.rates_missing} subscription(s) not included: exchange rate unavailable`);
+        }
+        document.getElementById('kpi-annual-sub').textContent = annualNotes.join('\n');
 
-        // 2. Card 2 & Card 3: TODOs (annual_total and next_charge don't exist in API yet)
-        // TODO: Replace once backend adds annual_total and next_charge to GET /subscriptions
+        const nextCharge = data.next_charge;
+        document.getElementById('kpi-next-charge-amount').textContent = nextCharge
+          ? `${Number(nextCharge.amount).toFixed(2)} ${nextCharge.currency}`
+          : '–';
+        document.getElementById('kpi-next-charge-sub').textContent = nextCharge
+          ? `${nextCharge.service} · ${formatDateText(nextCharge.date)}`
+          : 'No upcoming charges';
 
         // 3. Render Subscription Rows directly from data.subscriptions
         renderSubscriptionRows(loadedSubscriptions);
@@ -1830,15 +1867,16 @@
           const isPayment = item.type === 'payment';
           const label = isPayment ? 'Payment' : 'Cancellation';
           const details = isPayment
-            ? `${Number(item.amount).toFixed(2)} CHF . ${item.method}`
+            ? `${Number(item.amount).toFixed(2)} ${item.currency}${item.currency !== 'CHF'
+              ? ` (${Number(item.amount_chf).toFixed(2)} CHF)` : ''} . ${item.method}`
             : `Ends ${formatDateText(item.ends_on)}`;
           return `
             <article class="bg-white border border-obsidian/10 rounded-2xl px-5 py-4 shadow-card flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div class="flex items-center gap-3">
                 <span class="w-9 h-9 rounded-lg ${isPayment ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'} flex items-center justify-center font-mono text-sm">${isPayment ? '✓' : '!'}</span>
                 <div>
-                  <p class="text-sm font-bold text-obsidian">${item.service}</p>
-                  <p class="text-xs text-stone">${label} . ${details}</p>
+                  <p class="text-sm font-bold text-obsidian">${escapeHtml(item.service)}</p>
+                  <p class="text-xs text-stone">${escapeHtml(label)} . ${escapeHtml(details)}</p>
                 </div>
               </div>
               <time class="font-mono text-xs text-stone">${formatDateText(item.date)}</time>
@@ -1848,18 +1886,99 @@
     }
 
     async function loadNotificationsBanner() {
-      const alertBanner = document.getElementById('renewal-alert-banner');
-      const alertText = document.getElementById('renewal-alert-text');
       try {
         const notifData = await ApiService.getNotifications();
-        if (notifData && notifData.count > 0) {
-          alertBanner.classList.remove('hidden');
-          alertText.textContent = notifData.message || `${notifData.count} renewal notifications`;
-        } else {
-          alertBanner.classList.add('hidden');
-        }
-      } catch (_) {
+        renderNotificationsBanner(notifData);
+      } catch (err) {
+        document.getElementById('renewal-alert-banner').classList.add('hidden');
+        showToast(err.message, true);
+      }
+    }
+
+    function renderNotificationsBanner(notifData) {
+      const alertBanner = document.getElementById('renewal-alert-banner');
+      const alertText = document.getElementById('renewal-alert-text');
+      const itemsEl = document.getElementById('renewal-alert-items');
+      if (notifData && notifData.count > 0) {
+        alertBanner.classList.remove('hidden');
+        alertText.textContent = notifData.message || `${notifData.count} renewal notifications`;
+        itemsEl.innerHTML = '';
+        (notifData.items || []).forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'rounded-lg border border-amber-500/20 bg-white/60 px-3 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2';
+            const text = document.createElement('div');
+            text.className = 'text-xs text-amber-950';
+            const service = document.createElement('span');
+            service.className = 'font-semibold';
+            service.textContent = item.service;
+            const reason = document.createElement('span');
+            reason.textContent = ` · ${item.reason === 'payment_overdue'
+              ? `Payment overdue since ${formatDateText(item.date)}`
+              : `Payment due on ${formatDateText(item.date)}`}`;
+            text.append(service, reason);
+            const actions = document.createElement('div');
+            actions.className = 'flex flex-wrap gap-2';
+            const dismiss = document.createElement('button');
+            dismiss.type = 'button';
+            dismiss.className = 'text-[10px] font-semibold text-amber-900 border border-amber-700/30 rounded px-2 py-1 hover:bg-amber-100';
+            dismiss.textContent = 'Dismiss for this charge';
+            dismiss.onclick = () => dismissReminder(item);
+            const disable = document.createElement('button');
+            disable.type = 'button';
+            disable.className = 'text-[10px] font-semibold text-amber-900 border border-amber-700/30 rounded px-2 py-1 hover:bg-amber-100';
+            disable.textContent = 'Turn off reminders';
+            disable.onclick = () => disableReminder(item, row, actions);
+            actions.append(dismiss, disable);
+            row.append(text, actions);
+            itemsEl.appendChild(row);
+        });
+      } else {
         alertBanner.classList.add('hidden');
+      }
+    }
+
+    async function dismissReminder(item) {
+      try {
+        const data = await ApiService.dismissNotification(item.subscription_id);
+        renderNotificationsBanner(data);
+        showToast(`Reminder dismissed for ${item.service}`);
+        await loadDashboardSubscriptions();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    async function disableReminder(item, row, actions) {
+      try {
+        await ApiService.updateSubscription(item.subscription_id, { notification_enabled: false });
+        actions.innerHTML = '';
+        const prompt = document.createElement('span');
+        prompt.className = 'text-[10px] text-amber-950';
+        prompt.textContent = 'Reminders off. Also cancel this subscription?';
+        const yes = document.createElement('button');
+        yes.type = 'button';
+        yes.className = 'text-[10px] font-semibold text-red-700 border border-red-300 rounded px-2 py-1';
+        yes.textContent = 'Yes, cancel';
+        yes.onclick = () => cancelReminderSubscription(item);
+        const no = document.createElement('button');
+        no.type = 'button';
+        no.className = 'text-[10px] font-semibold text-amber-900 border border-amber-700/30 rounded px-2 py-1';
+        no.textContent = 'No, keep it';
+        no.onclick = () => loadDashboardSubscriptions();
+        actions.append(prompt, yes, no);
+        await loadDashboardSubscriptions();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    async function cancelReminderSubscription(item) {
+      try {
+        const data = await ApiService.cancelSubscription(item.subscription_id);
+        showToast(`${data.service} cancelled, ends ${data.ends_on}`);
+        await loadDashboardSubscriptions();
+      } catch (err) {
+        showToast(err.message, true);
       }
     }
 
@@ -1903,10 +2022,10 @@
                 ${getBrandLogoHTML(sub.service)}
                 <div class="min-w-0">
                   <div class="flex items-center flex-wrap">
-                    <p class="font-sans font-bold text-base text-obsidian truncate">${sub.service}</p>
+                    <p class="font-sans font-bold text-base text-obsidian truncate">${escapeHtml(sub.service)}</p>
                     ${cancelledTag}
                   </div>
-                  <p class="text-xs text-stone truncate">${sub.category} . <span class="capitalize">${sub.billing_period}</span></p>
+                  <p class="text-xs text-stone truncate">${escapeHtml(sub.category)} . <span class="capitalize">${escapeHtml(sub.billing_period)}</span></p>
                 </div>
               </div>
 
@@ -1931,7 +2050,7 @@
                 <button
                   type="button"
                   onclick="toggleRowMenu(event, ${sub.id})"
-                  aria-label="Actions for ${sub.service}"
+                  aria-label="Actions for ${escapeHtml(sub.service)}"
                   class="w-9 h-9 rounded-lg border border-obsidian/10 bg-alabaster hover:border-gold flex items-center justify-center text-obsidian font-mono text-sm transition-colors"
                 >
                   ⋯
@@ -1997,7 +2116,7 @@
         const selectEl = document.getElementById('form-category');
         if (selectEl && Array.isArray(loadedCategories) && loadedCategories.length > 0) {
           selectEl.innerHTML = loadedCategories.map(c =>
-            `<option value="${c.id}">${c.name}</option>`
+            `<option value="${c.id}">${escapeHtml(c.name)}</option>`
           ).join('');
         }
       } catch (err) {
@@ -2069,7 +2188,7 @@
       try {
         await ApiService.deleteSubscription(subId);
         await loadDashboardSubscriptions();
-        showToast('Subscription deleted (204)');
+        showToast('Subscription deleted');
       } catch (err) {
         showToast(err.message, true);
       }
@@ -2119,8 +2238,8 @@
           <div class="flex items-center gap-3 min-w-0">
             <div class="scale-75 origin-left -mr-2">${getBrandLogoHTML(preset.name)}</div>
             <div class="truncate">
-              <p class="text-xs font-bold text-obsidian group-hover:text-gold-dark transition-colors truncate">${preset.name}</p>
-              <p class="font-mono text-[10px] text-stone">${preset.category} . ${preset.billing_period}</p>
+              <p class="text-xs font-bold text-obsidian group-hover:text-gold-dark transition-colors truncate">${escapeHtml(preset.name)}</p>
+              <p class="font-mono text-[10px] text-stone">${escapeHtml(preset.category)} . ${escapeHtml(preset.billing_period)}</p>
             </div>
           </div>
           <span class="font-mono text-xs font-semibold text-obsidian shrink-0">${Number(preset.default_price).toFixed(2)} CHF</span>
@@ -2203,6 +2322,7 @@
 
     function openSubscriptionDrawer(mode = 'add', targetSubId = null) {
       closeAllRowMenus();
+      clearFieldErrors();
       document.getElementById('form-error-banner').classList.add('hidden');
       closePresetDropdown();
 
@@ -2252,7 +2372,7 @@
 
         const selectEl = document.getElementById('edit-sub-select');
         selectEl.innerHTML = loadedSubscriptions.map(s =>
-          `<option value="${s.id}">${s.service} (${Number(s.price).toFixed(2)} CHF / ${s.billing_period})</option>`
+          `<option value="${s.id}">${escapeHtml(s.service)} (${Number(s.price).toFixed(2)} ${escapeHtml(s.currency || 'CHF')} / ${escapeHtml(s.billing_period)})</option>`
         ).join('');
 
         const chosenId = targetSubId || (loadedSubscriptions[0] && loadedSubscriptions[0].id);
@@ -2287,10 +2407,41 @@
       document.body.style.overflow = '';
     }
 
+    const formFieldIds = {
+      service: 'form-service',
+      category_id: 'form-category',
+      price: 'form-price',
+      currency: 'form-currency',
+      billing_period: 'form-billing-period',
+      start_date: 'form-start-date',
+      catalog_id: 'preset-dropdown-trigger'
+    };
+
+    function clearFieldErrors() {
+      document.querySelectorAll('[data-field-error]').forEach(error => error.remove());
+      Object.values(formFieldIds).forEach(id => {
+        const field = document.getElementById(id);
+        if (field) field.classList.remove('border-red-500');
+      });
+    }
+
+    function showFieldError(fieldName, message) {
+      const field = document.getElementById(formFieldIds[fieldName]);
+      if (!field) return false;
+      field.classList.add('border-red-500');
+      const error = document.createElement('p');
+      error.dataset.fieldError = fieldName;
+      error.className = 'text-[10px] text-red-600 mt-1';
+      error.textContent = message;
+      field.parentElement.appendChild(error);
+      return true;
+    }
+
     async function handleSubscriptionSubmit(event) {
       event.preventDefault();
       const errBanner = document.getElementById('form-error-banner');
       errBanner.classList.add('hidden');
+      clearFieldErrors();
 
       const idVal = document.getElementById('form-sub-id').value;
       const catalogId = document.getElementById('form-subscription-id').value;
@@ -2345,8 +2496,10 @@
         closeSubscriptionDrawer();
         await loadDashboardSubscriptions();
       } catch (err) {
-        errBanner.textContent = err.message;
-        errBanner.classList.remove('hidden');
+        if (!showFieldError(err.field, err.message)) {
+          errBanner.textContent = err.message;
+          errBanner.classList.remove('hidden');
+        }
       }
     }
 
@@ -2357,11 +2510,13 @@
         await ApiService.deleteSubscription(Number(idVal));
         closeSubscriptionDrawer();
         await loadDashboardSubscriptions();
-        showToast('Subscription deleted (204)');
+        showToast('Subscription deleted');
       } catch (err) {
         const errBanner = document.getElementById('form-error-banner');
-        errBanner.textContent = err.message;
-        errBanner.classList.remove('hidden');
+        if (!showFieldError(err.field, err.message)) {
+          errBanner.textContent = err.message;
+          errBanner.classList.remove('hidden');
+        }
       }
     }
 
