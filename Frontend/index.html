@@ -577,7 +577,7 @@
           <div class="flex items-baseline gap-2 mb-2">
             <span id="kpi-monthly-total" class="kpi-kinetic-num font-mono text-3xl sm:text-4xl font-semibold tracking-tight">-- CHF</span>
           </div>
-          <p id="kpi-monthly-sub" class="text-xs font-mono text-stone">Loading from /api/subscriptions...</p>
+          <p id="kpi-monthly-sub" class="text-xs font-mono text-stone whitespace-pre-line">Loading from /api/subscriptions...</p>
         </div>
 
         <!-- Card 2: Annualized Total -->
@@ -1964,9 +1964,11 @@
         no.type = 'button';
         no.className = 'text-[10px] font-semibold text-amber-900 border border-amber-700/30 rounded px-2 py-1';
         no.textContent = 'No, keep it';
-        no.onclick = () => loadDashboardSubscriptions();
+        no.onclick = async () => {
+          showToast(`Reminders turned off for ${item.service}`);
+          await loadDashboardSubscriptions();
+        };
         actions.append(prompt, yes, no);
-        await loadDashboardSubscriptions();
       } catch (err) {
         showToast(err.message, true);
       }
@@ -2421,14 +2423,14 @@
       document.querySelectorAll('[data-field-error]').forEach(error => error.remove());
       Object.values(formFieldIds).forEach(id => {
         const field = document.getElementById(id);
-        if (field) field.classList.remove('border-red-500');
+        if (field) field.classList.remove('!border-red-500');
       });
     }
 
     function showFieldError(fieldName, message) {
       const field = document.getElementById(formFieldIds[fieldName]);
       if (!field) return false;
-      field.classList.add('border-red-500');
+      field.classList.add('!border-red-500');
       const error = document.createElement('p');
       error.dataset.fieldError = fieldName;
       error.className = 'text-[10px] text-red-600 mt-1';
