@@ -3,12 +3,17 @@
   "image": "mcr.microsoft.com/devcontainers/python:3.12",
   "postCreateCommand": "pip install -r backend/requirements-test.txt",
   "forwardPorts": [
-    8000
+    8000,
+    3000
   ],
   "portsAttributes": {
     "8000": {
       "label": "Payall API",
       "onAutoForward": "notify"
+    },
+    "3000": {
+      "label": "Payall frontend",
+      "onAutoForward": "openBrowser"
     }
   },
   "customizations": {

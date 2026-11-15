@@ -23,9 +23,15 @@ http://127.0.0.1:3000). Stop both with Ctrl+C.
 Without the launcher, run `python run.py` in `backend/` and `python server.py` in
 `Frontend/`, each in its own terminal.
 
-In Codespaces, start as above and open forwarded port 3000 in the Ports tab.
-Port 8000 plus `/docs` opens Swagger. This has not yet been tested in Codespaces.
-**[TODO Hoi]** Test the start in Codespaces and update this paragraph.
+Codespaces (tested 15 Nov 2026): on the GitHub page choose Code -> Codespaces ->
+Create codespace on main. The Python packages are installed automatically; Node is
+not needed. In the terminal run `python start_all.py` from /workspaces/Payall. When
+you see `Application startup complete`, open port 3000 in the Ports tab (globe icon).
+Port 8000 + `/docs` opens Swagger. The message that no browser could be opened is
+normal in Codespaces.
+If you reuse an older codespace: run `git pull`, then delete
+`backend/data/payall.sqlite` before starting, otherwise the old database does not
+match the current tables (error `no such column`).
 
 On first start, `backend/data/payall.sqlite` is created from `backend/seed.json`.
 It contains fictional user Lena Müller, Netflix, SBB Halbtax, Spotify and a catalog
@@ -487,7 +493,6 @@ Search this README for `TODO <your name>`.
 - **Polina:** Confirm or edit the design changes against Figma, then remove the marker ([Changes from the design](#changes-from-the-design-figma-design-coaching-5-oct)).
 - **Elpidio:** Check the workflow table against the app, disable interface-only security actions, decide about shared household users, and implement login after the security lecture ([User stories and first workflow](#user-stories-and-first-workflow), [Current workflow and frontend choice](#current-workflow-and-frontend-choice), [Decisions, open questions and next steps](#decisions-open-questions-and-next-steps)).
 - **Mohamed:** Update implemented next steps and confirm the first-version and budgeting decisions ([Decisions, open questions and next steps](#decisions-open-questions-and-next-steps)).
-- **Hoi:** Test the start in Codespaces and update the run instructions ([How to run](#how-to-run)).
 
 ### Decisions, open questions and next steps
 
