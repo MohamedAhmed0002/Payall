@@ -941,12 +941,13 @@
                 <p class="text-xs text-stone mt-1 mb-4">Update your workspace password to keep your subscription tracking secure.</p>
               </div>
               <div>
-                <button
+                                <button
                   type="button"
-                  onclick="togglePasswordModal()"
-                  class="w-full text-left px-4 py-2.5 bg-white border border-obsidian/15 hover:border-gold rounded-xl text-xs font-semibold text-obsidian flex items-center justify-between transition-colors"
+                  disabled
+                  aria-disabled="true"
+                  class="w-full text-left px-4 py-2.5 bg-white border border-obsidian/15 rounded-xl text-xs font-semibold text-stone flex items-center justify-between opacity-60 cursor-not-allowed"
                 >
-                  <span>Change password</span>
+                  <span>Available after login</span>
                   <svg class="w-3.5 h-3.5 text-stone" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 </button>
                 <div id="password-inline-box" class="hidden mt-3 pt-3 border-t border-obsidian/10 space-y-2.5">
@@ -966,14 +967,15 @@
                 <h4 class="text-sm font-bold text-obsidian">Two-factor authentication</h4>
                 <p class="text-xs text-stone mt-1 mb-4">Add a second verification step when you sign in to PayAll.</p>
               </div>
-              <button
+                            <button
                 type="button"
                 id="btn-toggle-2fa"
-                onclick="toggleTwoFactorAuth()"
-                class="w-full text-left px-4 py-2.5 bg-white border border-obsidian/15 hover:border-gold rounded-xl text-xs font-semibold text-obsidian flex items-center justify-between transition-colors"
+                disabled
+                aria-disabled="true"
+                class="w-full text-left px-4 py-2.5 bg-white border border-obsidian/15 rounded-xl text-xs font-semibold text-stone flex items-center justify-between opacity-60 cursor-not-allowed"
               >
-                <span id="label-2fa-status">Off</span>
-                <span id="badge-2fa-pill" class="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-obsidian/5 text-stone">Click to enable</span>
+                <span id="label-2fa-status">Available after login</span>
+                <span id="badge-2fa-pill" class="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-obsidian/5 text-stone">Login required</span>
               </button>
             </div>
 
@@ -986,13 +988,14 @@
                 </div>
                 <p class="text-xs text-stone mt-1 mb-4">Review devices signed in to your workspace and sign out other devices if needed.</p>
               </div>
-              <button
+                            <button
                 type="button"
                 id="btn-signout-sessions"
-                onclick="signOutOtherDevices()"
-                class="w-full text-left px-4 py-2.5 bg-white border border-obsidian/15 hover:border-gold rounded-xl text-xs font-semibold text-obsidian flex items-center justify-between transition-colors"
+                disabled
+                aria-disabled="true"
+                class="w-full text-left px-4 py-2.5 bg-white border border-obsidian/15 rounded-xl text-xs font-semibold text-stone flex items-center justify-between opacity-60 cursor-not-allowed"
               >
-                <span id="signout-sessions-label">Sign out other devices</span>
+                <span id="signout-sessions-label">Available after login</span>
                 <svg class="w-3.5 h-3.5 text-stone" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
               </button>
             </div>
@@ -1019,12 +1022,13 @@
           <div class="rounded-2xl bg-red-50/70 border border-red-200 p-5">
             <h4 class="text-sm font-bold text-red-800">Delete account</h4>
             <p class="text-xs text-red-700 mt-1 mb-4">Permanently delete your PayAll workspace, subscriptions, and renewal reminders. This action cannot be undone.</p>
-            <button
+                        <button
               type="button"
-              onclick="openDeleteAccountModal()"
-              class="w-full py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-sans text-xs font-semibold text-left flex items-center justify-between transition-colors shadow-sm"
+              disabled
+              aria-disabled="true"
+              class="w-full py-2.5 px-4 rounded-xl bg-red-300 text-red-900 font-sans text-xs font-semibold text-left flex items-center justify-between opacity-60 cursor-not-allowed"
             >
-              <span>Delete account</span>
+              <span>Available after login</span>
               <span class="font-mono text-[10px] uppercase tracking-widest opacity-90">Permanent Action</span>
             </button>
           </div>
