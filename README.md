@@ -383,8 +383,6 @@ needed for one dashboard workflow.
 
 #### Changes from the design (Figma, design coaching 5 Oct)
 
-**[TODO Polina]** Confirm or edit this list against the Figma file, then remove this marker.
-
 1. Navigation is a top bar (Dashboard, Settings, History, About us), not a sidebar.
    There is no sidebar box with monthly spend.
 2. Billing history and Settings now exist. Settings has reminder days and CSV export.
