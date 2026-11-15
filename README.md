@@ -1,44 +1,37 @@
 # PayAll
 
-**Current stage:** Milestone 1 – design draft. We update this README during the whole project.
+**Current stage:** Milestone 3 – integration. The dashboard and the add-subscription
+workflow are connected to the API. Login comes after the security lecture.
 
 **Getting started:** See the [backend setup guide](backend/README.md).
 
 ## How to run
-1. From the root folder, run: python start_all.py
-2. Open http://127.0.0.1:3000 (opening index.html directly doesn't work anymore)
-
-Without the launcher: run python run.py in /backend and python server.py in /Frontend, each in its own terminal.
-
-## Frontend
-
-Approach: one static page (Frontend/index.html) with browser JavaScript that calls our API
-through /api. Frontend/server.py serves the page and forwards only allow-listed API routes
-to FastAPI (same origin, no CORS needed). The API owns all business rules; the page only
-shows the API's results and messages and shows success only after the API confirms.
-
-How to start: `python start_all.py` → http://127.0.0.1:3000
-
-Success example: add "Spotify" from the catalog → `POST /api/subscriptions` → `201`; it
-appears in the list and the monthly/annual totals update.
-
-Error example: add a subscription with price 0 → `422`
-`{"error": "price_must_be_positive", "field": "price", "message": "Price must be greater than 0."}`;
-the page shows the message under the Price field with a red border.
-
-Reminders: the dashboard shows each reminder with its reason; the user can dismiss it for
-this charge or turn reminders off (and is then asked whether to cancel the subscription).
-
-Styling: Tailwind is pre-built into `Frontend/static/tailwind.css`. After adding new
-Tailwind classes, rebuild with the npx command from `Frontend/tailwind`.
+Requirements: Python 3.10+. Install once in a virtual environment:
+`pip install -r backend/requirements-test.txt` (see [backend/README.md](backend/README.md)
+for details). Node is only needed to rebuild Tailwind:
 
 ```sh
 cd Frontend/tailwind
 npx tailwindcss@3 -c tailwind.config.js -i input.css -o ../static/tailwind.css --minify
 ```
 
-Not implemented yet: login and the security features in Settings (password, 2FA, sessions,
-delete account) come after the security lecture.
+From the project root, run `python start_all.py`. Keep both processes running:
+the FastAPI backend uses port 8000 (API docs at
+http://127.0.0.1:8000/docs), and the frontend uses port 3000 (open
+http://127.0.0.1:3000). Stop both with Ctrl+C.
+
+Without the launcher, run `python run.py` in `backend/` and `python server.py` in
+`Frontend/`, each in its own terminal.
+
+In Codespaces, start as above and open forwarded port 3000 in the Ports tab.
+Port 8000 plus `/docs` opens Swagger. This has not yet been tested in Codespaces.
+
+On first start, `backend/data/payall.sqlite` is created from `backend/seed.json`.
+It contains fictional user Lena Müller, Netflix, SBB Halbtax, Spotify and a catalog
+of about 58 Swiss services. To reset it, stop the app, delete `payall.sqlite`, and
+start again.
+
+Run the tests with `cd backend && pytest` (67 tests).
 
 ## Project overview
 
@@ -46,12 +39,12 @@ Payall is a web app to track spending, manage budgets and monitor subscriptions.
 
 ### Team and initial responsibilities
 
-| Member | Initial responsibility | Next action |
-|---|---|---|
-| Mohamed | Coordination and README | Keep decisions, questions and the milestone commit together |
-| Elpidio | Users and workflow | Describe needs and the steps of one workflow |
-| Polina | Sketches and interaction | Sketch the screens and feedback for that workflow |
-| Hoi | Data and API exploration | Prepare sample JSON and clarify the proposed operations |
+| Member | Initial responsibility | Next action | Integration work |
+|---|---|---|---|
+| Mohamed | Coordination and README | Keep decisions, questions and the milestone commit together | UI and API connection, proxy, launcher |
+| Elpidio | Users and workflow | Describe needs and the steps of one workflow | Disable security features (open) |
+| Polina | Sketches and interaction | Sketch the screens and feedback for that workflow | Edit/delete, history view, add form, menu labels, server allow-list |
+| Hoi | Data and API exploration | Prepare sample JSON and clarify the proposed operations | Backend rules and data, summary cards, totals, currencies, errors, reminders, Tailwind, README |
 
 We review each other's work so everyone understands the draft.
 
@@ -80,16 +73,16 @@ We review each other's work so everyone understands the draft.
 
 Outside the initial scope: bank connection, automatic cancellation, budgets.
 
-**[TODO: Elpidio, check and complete the workflow]**
-
 | Step | User / role | Action | Information needed | Expected result or feedback |
 |---|---|---|---|---|
-| 1 | User | Opens the dashboard | – | Sees the list of subscriptions and the total |
-| 2 | User | Clicks "Add a subscription" | – | Add screen opens |
-| 3 | User | Chooses a service and enters price and billing period | Service, price, currency, billing period | – |
-| 4 | User | Clicks save | – | Subscription appears in the dashboard and the total updates |
+| 1 | User | Opens the dashboard | – | Sees cards, the list and reminders |
+| 2 | User | Clicks "+ Add subscription" | – | The add drawer opens |
+| 3 | User | Chooses a catalog service or "+ Add custom service" | Service, price, currency, billing frequency, start date, reminder | The form shows the selected service |
+| 4 | User | Chooses "Mark manually" or "Mark automatically" and clicks "+ Add subscription" | Payment choice | On success, the drawer closes, the row appears and totals update |
+| 5 | User | Sends invalid data | For example, price `0` | On error, the API message appears under the field |
 
-Question to discuss: what happens if the user enters a price that is zero or negative?
+The API rejects a zero or negative price with 422 `Price must be greater than 0.`
+and nothing is saved.
 
 ## 2. Design
 
@@ -332,7 +325,7 @@ In code, we use the ORM **SQLModel** (built on SQLAlchemy), following the
 - **Safe changes:** each create, update or delete runs in a transaction, so a failed
   request does not leave half-saved data.
 
-**Planned tables:**
+**Tables:**
 
 | Table | Main columns | Relationship |
 |---|---|---|
@@ -363,7 +356,126 @@ recorded, so a price change shortly before a charge may be reflected in that cha
 
 We looked at normal subscription tracker apps. We like the simple dashboard with a list of services, their status and a total at the top.
 
-## 3. Project management
+## 3. Implementation and integration
+
+### Current workflow and frontend choice
+
+The workflow serves a subscription owner who adds a subscription and immediately sees it
+in the dashboard with the updated monthly and annual total and next charge.
+
+We use the browser + API approach from lecture 07. One static page,
+`Frontend/index.html`, uses browser JavaScript (`ApiService`) to call the API with
+`fetch` through `/api`. `Frontend/server.py` serves the page and forwards only
+allow-listed API routes to FastAPI. This fits because the API returns JSON with
+calculated values such as totals, next charge, payment status and reminders. The page
+only displays them and updates parts of one page. The same origin avoids CORS setup.
+Server-rendered Jinja pages and a frontend framework from lectures 07A/07B were not
+needed for one dashboard workflow.
+
+#### Changes from the design (Figma, design coaching 5 Oct)
+
+> Polina: please confirm or edit this list against the Figma file.
+
+1. Navigation is a top bar (Dashboard, Settings, History, About us), not a sidebar.
+   There is no sidebar box with monthly spend.
+2. Billing history and Settings now exist. Settings has reminder days and CSV export.
+3. Add subscription and add custom subscription use one drawer. It has a catalog
+   dropdown with about 58 Swiss services and a `+ Add custom service` link. The save
+   button is `+ Add subscription`. The payment choice is `Mark manually` or
+   `Mark automatically`. There is no read-only Demo equivalent in CHF.
+4. Edit my subscriptions uses the same drawer. Renew the billing period was removed,
+   and there is no Total per year box.
+5. The row menu has Edit, Mark as paid, Cancel and Delete. Cancel is new: the row
+   shows `Cancelled (Ends <date>)` until the paid period ends.
+6. The reminders banner lists each reminder and its reason. Its buttons are
+   `Dismiss for this charge` and `Turn off reminders`.
+7. Totals show `≈` and the ECB rate date when other currencies are used.
+
+#### Changes after the backend coaching (26 Oct)
+
+1. A shared read-only `subscription` catalog table is separate from the user's
+   `usersubscription` rows. POST uses `catalog_id`; custom subscriptions leave it out.
+2. Calculated values (`next_charge_date`, `payment_status`, `status`, totals) are never stored.
+3. Payments support autopay or manual payment at `POST /subscriptions/{id}/payments`;
+   cancel and delete are different operations.
+4. Notifications with dismiss, settings, history, catalog and categories endpoints
+   were added, together with search and sort.
+5. CHF, USD and EUR use daily ECB rates. Money is stored in Rappen.
+6. Every error has `error`, `field` and a readable message. The page displays it.
+7. `GET /subscriptions` also returns `annual_total` and `next_charge`.
+8. A charge is upcoming on its charge day and overdue from the next day.
+9. `Frontend/server.py` has an allow-list, `start_all.py` is the launcher, and
+   Tailwind CSS is local.
+
+| Part | Status | Note |
+|---|---|---|
+| Connected | Done | Dashboard (cards, list, search and sort), add (catalog and custom), edit, mark as paid, cancel, delete, reminders (dismiss and turn off), billing history and reminder days in Settings |
+| Simulated | Done | Payments have no bank connection; autopay is assumed successful on the charge date |
+| Interface only | Open | Password change, 2FA, sign out other devices and delete account show a success message but call no API and save nothing |
+| To be completed by Elpidio | Open | Disable the interface-only security actions and label them `Available after login` |
+| Planned | Open | Login after the security lecture |
+
+### Trace one interaction: adding a subscription
+
+| Step | What happens in our project | Relevant code or data |
+|---|---|---|
+| User action | Chooses Disney+ from the catalog, start date `15 Nov 2026`, `Mark manually`, and clicks `+ Add subscription` | Drawer form and `handleSubscriptionSubmit()` in `Frontend/index.html` |
+| Request | Browser sends `POST /api/subscriptions` with `catalog_id: 2`, `start_date: "2026-11-15"` and `auto_pay: false`. The server checks the allow-list and forwards it to FastAPI | `ApiService.request()` in `Frontend/index.html`; `ProxyHandler` in `Frontend/server.py`; route in `backend/main.py` |
+| Input validation | FastAPI/Pydantic checks types and formats. Invalid input returns 422 with `error`, `field` and `message` | `SubscriptionInput` in `backend/models.py`; error handlers in `backend/main.py` and `backend/errors.py` |
+| Business rules | Price is greater than 0 and at most 100000, the date is in range, and the catalog item exists. Catalog name, category, price and period are copied unless sent; the catalog is not changed | `create_subscription()` in `backend/service.py` |
+| Storage | One `usersubscription` row is saved in SQLite in one transaction. The price is 1490 Rappen | `backend/models.py`, `backend/database.py`, `backend/data/payall.sqlite` |
+| Response | `201 Created` returns the subscription, calculated `next_charge_date: "2026-11-15"`, `payment_status: "pending"` and `status: "active"` | API response JSON |
+| Visible result | The drawer closes, a success message appears, and `GET /api/subscriptions` is loaded again. Disney+ appears, totals and next charge update, and the reminder says `Payment due on 15 Nov 2026` | `loadDashboardSubscriptions()` and `renderSubscriptionRows()` in `Frontend/index.html` |
+
+For the error path, price `0` returns 422:
+`{"error": "price_must_be_positive", "field": "price", "message": "Price must be greater than 0."}`.
+Nothing is saved. The page shows the message under Price with a red border through
+`showFieldError()`. The browser keeps only the last loaded list in `loadedSubscriptions`
+and `server.py` keeps nothing. Everything that must survive a restart is in SQLite.
+Calculated values are never stored.
+
+### Check the saved result
+
+Reload the page; the data comes from the API, not the browser. Alternatively, call
+`GET /api/subscriptions`, open Swagger at http://127.0.0.1:8000/docs, or open
+`backend/data/payall.sqlite` with DB Browser for SQLite and inspect `usersubscription`.
+
+### What we checked
+
+| Case | Action or input | Expected result | Observed result / remaining issue |
+|---|---|---|---|
+| Success | Browser, 15 Nov 2026: add Disney+ from the catalog | 201, saved row and updated totals | Disney+ appeared as the fourth row; monthly total changed from 49.68 to 64.58 CHF, annual total from 596.20 to 775.00 CHF, next charge was 14.90 CHF on 15 Nov 2026, and the reminder appeared |
+| Saved data | Same POST through the API and database | New row in `usersubscription` | Database had 4 rows, up from 3 |
+| Error | Price `0` | 422, message under Price, nothing saved | Message and red border appeared; database still had 3 subscriptions |
+| Reminders | `Turn off reminders`, then `No, keep it`, 13 Nov 2026 | Reminder disappears and subscription stays | As expected |
+| Limitation | Settings: change password, 2FA, sign out, delete account | Disabled until login exists | They still show a success message but send nothing to the API or save nothing. Open: Elpidio disables them and labels them `Available after login` |
+
+Automated tests: [`backend/tests`](backend/tests) (67 tests, `pytest`).
+
+Screenshots:
+
+- [Dashboard cards before adding](docs/screenshots/dashboard-before-cards.png)
+- [Dashboard list before adding](docs/screenshots/dashboard-before-list.png)
+- [Add subscription form](docs/screenshots/add-form.png)
+- [Price validation error](docs/screenshots/price-error.png)
+- [Successful add, cards](docs/screenshots/add-success-cards.png)
+- [Successful add, list](docs/screenshots/add-success-list.png)
+
+### Progress and questions for coaching
+
+- **Changed since Milestone 2:** The frontend uses the real API instead of mock data.
+  Errors are readable. Currencies, reminder actions, local Tailwind and the server
+  allow-list are connected.
+- **Working now:** Dashboard and add-subscription workflow, edit, cancel, delete,
+  mark as paid, history and reminders.
+- **Open issue:** Login is not implemented. Security features in Settings are interface-only.
+- **Question:** For our page and API on the same origin through `server.py`, should
+  login use a session cookie or a bearer token stored in the browser?
+- **Next step:** Elpidio disables the security features and labels them `Available after
+  login`; check that the buttons are disabled in the browser. Hoi and Mohamed add
+  login after the security lecture and check it with pytest and a manual login test.
+
+## 4. Project management
 
 ### Decisions, open questions and next steps
 
@@ -379,7 +491,7 @@ We looked at normal subscription tracker apps. We like the simple dashboard with
 | Notifications | Decided: one combined in-app message, default 7 days before, user can change the number of days | Implement notification settings |
 | Categories | Decided: fixed list including "Other" | Keep the fixed category table |
 | Money | Decided: stored as whole Rappen to avoid rounding errors | Keep API amounts in CHF |
-| Login and frontend | Later, after the related lectures | Revisit after the lectures |
+| Login | After the security lecture | Hoi + Mohamed |
 | Which currencies? | Decided: CHF, USD and EUR are supported | Group decision (Hoi) |
 | Shared household user needed? | Undecided | Group decision (Elpidio) |
 | How do we store data? | Decided: relational SQL (SQLite) with SQLModel ORM | Implement the first workflow (Hoi) |
@@ -391,10 +503,13 @@ We looked at normal subscription tracker apps. We like the simple dashboard with
 |---|---|---|
 | 1 – Design draft | Analysis, workflow, sketches, example JSON and proposed operations | Draft done, open questions listed above |
 | 2 – Contract and available implementation | OpenAPI contract, subscriptions, payments, settings, notifications, history, search and sort endpoints; pytest passes | Implemented and tested |
-| Integration – later | Dashboard and add-subscription workflow connected to the API, success and error shown in the UI | In progress: login after the security lecture |
+| 3 – Integration | Dashboard and add-subscription workflow connected to the API; trace, checks and screenshots in section 3 | Ready for coaching on 16 Nov; login open |
 
-## 4. References and acknowledgements
+## 5. References and acknowledgements
 
 - Figma design: link above.
 - Template: FHNW Web-based Applications, Milestone 1 README.
-- AI assistance: we used an AI assistant to help structure and phrase this README.
+- FHNW Web-based Applications lectures 07, 07A, 07B and the Station Bar reference
+  repositories (`backend extensions/orm`, `frontend extensions/frontend`).
+- AI assistance: we used AI assistants (GitHub Copilot, Claude) to help with code and
+  README wording; we reviewed and tested the results.
