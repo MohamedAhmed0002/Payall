@@ -25,6 +25,7 @@ Without the launcher, run `python run.py` in `backend/` and `python server.py` i
 
 In Codespaces, start as above and open forwarded port 3000 in the Ports tab.
 Port 8000 plus `/docs` opens Swagger. This has not yet been tested in Codespaces.
+**[TODO Hoi]** Test the start in Codespaces and update this paragraph.
 
 On first start, `backend/data/payall.sqlite` is created from `backend/seed.json`.
 It contains fictional user Lena Müller, Netflix, SBB Halbtax, Spotify and a catalog
@@ -42,7 +43,7 @@ Payall is a web app to track spending, manage budgets and monitor subscriptions.
 | Member | Initial responsibility | Next action | Integration work |
 |---|---|---|---|
 | Mohamed | Coordination and README | Keep decisions, questions and the milestone commit together | UI and API connection, proxy, launcher |
-| Elpidio | Users and workflow | Describe needs and the steps of one workflow | Disable security features (open) |
+| Elpidio | Users and workflow | Describe needs and the steps of one workflow | Disable security features (open); login and security features after the security lecture |
 | Polina | Sketches and interaction | Sketch the screens and feedback for that workflow | Edit/delete, history view, add form, menu labels, server allow-list |
 | Hoi | Data and API exploration | Prepare sample JSON and clarify the proposed operations | Backend rules and data, summary cards, totals, currencies, errors, reminders, Tailwind, README |
 
@@ -80,6 +81,8 @@ Outside the initial scope: bank connection, automatic cancellation, budgets.
 | 3 | User | Chooses a catalog service or "+ Add custom service" | Service, price, currency, billing frequency, start date, reminder | The form shows the selected service |
 | 4 | User | Chooses "Mark manually" or "Mark automatically" and clicks "+ Add subscription" | Payment choice | On success, the drawer closes, the row appears and totals update |
 | 5 | User | Sends invalid data | For example, price `0` | On error, the API message appears under the field |
+
+**[TODO Elpidio]** Check that this workflow table matches the app, then remove this marker.
 
 The API rejects a zero or negative price with 422 `Price must be greater than 0.`
 and nothing is saved.
@@ -374,7 +377,7 @@ needed for one dashboard workflow.
 
 #### Changes from the design (Figma, design coaching 5 Oct)
 
-> Polina: please confirm or edit this list against the Figma file.
+**[TODO Polina]** Confirm or edit this list against the Figma file, then remove this marker.
 
 1. Navigation is a top bar (Dashboard, Settings, History, About us), not a sidebar.
    There is no sidebar box with monthly spend.
@@ -412,7 +415,7 @@ needed for one dashboard workflow.
 | Connected | Done | Dashboard (cards, list, search and sort), add (catalog and custom), edit, mark as paid, cancel, delete, reminders (dismiss and turn off), billing history and reminder days in Settings |
 | Simulated | Done | Payments have no bank connection; autopay is assumed successful on the charge date |
 | Interface only | Open | Password change, 2FA, sign out other devices and delete account show a success message but call no API and save nothing |
-| To be completed by Elpidio | Open | Disable the interface-only security actions and label them `Available after login` |
+| **[TODO Elpidio]** | Open | Disable the interface-only security actions and label them `Available after login` |
 | Planned | Open | Login after the security lecture |
 
 ### Trace one interaction: adding a subscription
@@ -448,7 +451,7 @@ Reload the page; the data comes from the API, not the browser. Alternatively, ca
 | Saved data | Same POST through the API and database | New row in `usersubscription` | Database had 4 rows, up from 3 |
 | Error | Price `0` | 422, message under Price, nothing saved | Message and red border appeared; database still had 3 subscriptions |
 | Reminders | `Turn off reminders`, then `No, keep it`, 13 Nov 2026 | Reminder disappears and subscription stays | As expected |
-| Limitation | Settings: change password, 2FA, sign out, delete account | Disabled until login exists | They still show a success message but send nothing to the API or save nothing. Open: Elpidio disables them and labels them `Available after login` |
+| Limitation | Settings: change password, 2FA, sign out, delete account | Disabled until login exists | They still show a success message but send nothing to the API or save nothing. Open: Elpidio disables them and labels them `Available after login` **[TODO Elpidio]** |
 
 Automated tests: [`backend/tests`](backend/tests) (67 tests, `pytest`).
 
@@ -472,10 +475,19 @@ Screenshots:
 - **Question:** For our page and API on the same origin through `server.py`, should
   login use a session cookie or a bearer token stored in the browser?
 - **Next step:** Elpidio disables the security features and labels them `Available after
-  login`; check that the buttons are disabled in the browser. Hoi and Mohamed add
-  login after the security lecture and check it with pytest and a manual login test.
+  login`; check that the buttons are disabled in the browser. Elpidio adds login after
+  the security lecture and checks it with pytest and a manual login test.
 
 ## 4. Project management
+
+### Open team tasks
+
+Search this README for `TODO <your name>`.
+
+- **Polina:** Confirm or edit the design changes against Figma, then remove the marker ([Changes from the design](#changes-from-the-design-figma-design-coaching-5-oct)).
+- **Elpidio:** Check the workflow table against the app, disable interface-only security actions, decide about shared household users, and implement login after the security lecture ([User stories and first workflow](#user-stories-and-first-workflow), [Current workflow and frontend choice](#current-workflow-and-frontend-choice), [Decisions, open questions and next steps](#decisions-open-questions-and-next-steps)).
+- **Mohamed:** Update implemented next steps and confirm the first-version and budgeting decisions ([Decisions, open questions and next steps](#decisions-open-questions-and-next-steps)).
+- **Hoi:** Test the start in Codespaces and update the run instructions ([How to run](#how-to-run)).
 
 ### Decisions, open questions and next steps
 
@@ -491,11 +503,13 @@ Screenshots:
 | Notifications | Decided: one combined in-app message, default 7 days before, user can change the number of days | Implement notification settings |
 | Categories | Decided: fixed list including "Other" | Keep the fixed category table |
 | Money | Decided: stored as whole Rappen to avoid rounding errors | Keep API amounts in CHF |
-| Login | After the security lecture | Hoi + Mohamed |
+| Login | After the security lecture | **[TODO Elpidio]** Implement login after the security lecture |
 | Which currencies? | Decided: CHF, USD and EUR are supported | Group decision (Hoi) |
-| Shared household user needed? | Undecided | Group decision (Elpidio) |
+| Shared household user needed? | Undecided | **[TODO Elpidio]** Decide with the group or move to 'Later' |
 | How do we store data? | Decided: relational SQL (SQLite) with SQLModel ORM | Implement the first workflow (Hoi) |
 | Frontend technology | Decided: static HTML + JavaScript calling the API (browser + API approach, lecture 07) | Done (team) |
+
+**[TODO Mohamed]** Update the 'Next step / person' column: several rows are already implemented (Payment, Notifications, Edit screen, Delete vs cancel); confirm the rows 'How big is the first version?' and 'Budgets and spending tracking'.
 
 ### Milestone progress
 
